@@ -120,7 +120,7 @@
 // ============================================================================
 
 #define BUTTON_DEBOUNCE_MS 50
-#define BUTTON_LONG_PRESS_MS 5000  // 5 seconds for setup mode
+#define BUTTON_LONG_PRESS_MS 10000  // 10 seconds for WiFi reset
 
 // ============================================================================
 // SETUP MODE CONFIGURATION

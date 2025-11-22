@@ -23,6 +23,7 @@ extern ButtonHandler buttonHandler;
 static float previousWaterHeight = 0.0f;
 static unsigned long previousTime = 0;
 static int displayScreenMode = 0;  // 0=Status, 1=Network, 2=Settings
+static bool btn5HoldMessageShown = false;
 
 // ============================================================================
 // TANK CONFIGURATION CHECK
@@ -206,41 +207,64 @@ void updateDisplay() {
 // ============================================================================
 
 void handleButtons() {
-    // BTN1 - Cycle display screens
-    if (buttonHandler.isButtonPressed(1)) {
-        displayManager.nextScreen();
-        DEBUG_PRINTLN("[Button] Next screen");
-    }
-
-    // BTN2 - Manual pump ON
-    if (buttonHandler.isButtonPressed(2)) {
-        iotDevice.controlData.autoMode.value = false;
-        iotDevice.controlData.pumpSwitch.value = true;
-        DEBUG_PRINTLN("[Button] Manual pump ON");
-    }
-
-    // BTN3 - Toggle Auto/Manual mode
-    if (buttonHandler.isButtonPressed(3)) {
-        bool newMode = !iotDevice.controlData.autoMode.value;
-        iotDevice.controlData.autoMode.value = newMode;
-        DEBUG_PRINTF("[Button] Mode: %s\n", newMode ? "Auto" : "Manual");
-    }
-
-    // BTN4 - Manual pump OFF
-    if (buttonHandler.isButtonPressed(4)) {
-        iotDevice.controlData.autoMode.value = false;
-        iotDevice.controlData.pumpSwitch.value = false;
-        DEBUG_PRINTLN("[Button] Manual pump OFF");
-    }
-
-    // BTN5 - WiFi reset
+    // Check if BTN5 is being held and show feedback
     if (buttonHandler.isButtonPressed(5)) {
-        DEBUG_PRINTLN("[Button] WiFi reset - restarting in AP mode");
-        displayManager.showMessage("WiFi Reset", "Restarting...");
-        delay(1000);
-        iotDevice.getStorage().clearWiFiCredentials();
-        iotDevice.getStorage().clearDeviceToken();
-        ESP.restart();
+        if (!btn5HoldMessageShown) {
+            displayManager.showMessage("Hold 10s", "WiFi Reset", 1000);
+            btn5HoldMessageShown = true;
+        }
+    } else {
+        btn5HoldMessageShown = false;
+    }
+
+    // Get button event from handler
+    ButtonEvent event = buttonHandler.getEvent();
+
+    // Handle events
+    switch (event) {
+        case BTN1_PRESSED:
+            displayManager.nextScreen();
+            DEBUG_PRINTLN("[Button] Next screen");
+            break;
+
+        case BTN2_PRESSED:
+            iotDevice.controlData.autoMode.value = false;
+            iotDevice.controlData.pumpSwitch.value = true;
+            DEBUG_PRINTLN("[Button] Manual pump ON");
+            break;
+
+        case BTN3_PRESSED:
+            {
+                bool newMode = !iotDevice.controlData.autoMode.value;
+                iotDevice.controlData.autoMode.value = newMode;
+                DEBUG_PRINTF("[Button] Mode: %s\n", newMode ? "Auto" : "Manual");
+            }
+            break;
+
+        case BTN4_PRESSED:
+            iotDevice.controlData.autoMode.value = false;
+            iotDevice.controlData.pumpSwitch.value = false;
+            DEBUG_PRINTLN("[Button] Manual pump OFF");
+            break;
+
+        case BTN5_LONG_PRESS:
+            // WiFi reset - requires 10 second hold
+            DEBUG_PRINTLN("[Button] WiFi reset - restarting in AP mode");
+            displayManager.showMessage("WiFi Reset", "Restarting...");
+            delay(1000);
+            iotDevice.getStorage().clearWiFiCredentials();
+            iotDevice.getStorage().clearDeviceToken();
+            ESP.restart();
+            break;
+
+        case BTN6_PRESSED:
+            // Hardware override (handled by relay controller)
+            DEBUG_PRINTLN("[Button] Hardware override");
+            break;
+
+        default:
+            // No event or BTN_NONE
+            break;
     }
 
     // BTN6 - Hardware override (handled by relay controller)
