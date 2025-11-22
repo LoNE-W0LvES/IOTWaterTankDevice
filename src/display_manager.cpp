@@ -128,6 +128,11 @@ void DisplayManager::drawStatusScreen(float waterLevel, float waterLevelPercent,
 void DisplayManager::drawNetworkScreen(int rssi, bool wifiConnected) {
     // Screen 2: Network info (IP, RSSI, uptime) or AP info (SSID, password, IP)
 
+    Serial.println("[Display] Drawing Network Screen:");
+    Serial.println("  isAPMode: " + String(isAPMode ? "true" : "false"));
+    Serial.println("  SSID: " + ssidName);
+    Serial.println("  Pass: " + password);
+
     display.setTextSize(1);
 
     if (isAPMode) {
@@ -303,6 +308,12 @@ void DisplayManager::setAPInfo(const String& ssid, const String& pw, const Strin
     password = pw;
     ipAddress = ip;
     isAPMode = true;
+
+    Serial.println("[Display] AP Info Set:");
+    Serial.println("  SSID: " + ssid);
+    Serial.println("  Pass: " + pw);
+    Serial.println("  IP: " + ip);
+    Serial.println("  isAPMode: true");
 }
 
 void DisplayManager::setTankSettings(float height, float width, const String& shape,
