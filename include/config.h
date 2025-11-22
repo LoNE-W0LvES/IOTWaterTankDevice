@@ -2,7 +2,6 @@
 #define CONFIG_H
 
 #include <Arduino.h>
-#include "endpoints.h"  // API endpoint definitions
 
 // ============================================================================
 // DEBUG CONFIGURATION
@@ -90,8 +89,6 @@
 // Note: Device uses dashboard credentials from web portal (user-entered)
 // Credentials are stored in NVS: PREF_DASHBOARD_USER and PREF_DASHBOARD_PASS
 // User enters credentials via WiFi setup portal at http://192.168.4.1
-
-// API Endpoints - defined in endpoints.h
 
 // ============================================================================
 // WIFI CONFIGURATION
