@@ -12,6 +12,13 @@
 #include <Arduino.h>
 
 /**
+ * @brief Check if tank is properly configured
+ * @return true if tank has valid configuration, false if not configured
+ * Tank is considered not configured if: height=0, width=0, shape="none", thresholds=0
+ */
+bool isTankConfigured();
+
+/**
  * @brief Read sensors and update telemetry data
  * Updates iotDevice.telemetryData with current sensor readings
  */

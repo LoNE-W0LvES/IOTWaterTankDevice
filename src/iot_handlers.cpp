@@ -25,10 +25,43 @@ static unsigned long previousTime = 0;
 static int displayScreenMode = 0;  // 0=Status, 1=Network, 2=Settings
 
 // ============================================================================
+// TANK CONFIGURATION CHECK
+// ============================================================================
+
+bool isTankConfigured() {
+    // Tank is not configured if all parameters are zero/none
+    bool heightZero = (iotDevice.deviceConfig.tankHeight.value == 0.0f);
+    bool widthZero = (iotDevice.deviceConfig.tankWidth.value == 0.0f);
+    bool shapeNone = (iotDevice.deviceConfig.tankShape.value == "none" ||
+                      iotDevice.deviceConfig.tankShape.value == "None" ||
+                      iotDevice.deviceConfig.tankShape.value == "NONE" ||
+                      iotDevice.deviceConfig.tankShape.value == "");
+    bool upperZero = (iotDevice.deviceConfig.upperThreshold.value == 0.0f);
+    bool lowerZero = (iotDevice.deviceConfig.lowerThreshold.value == 0.0f);
+
+    // If all are zero/none, tank is NOT configured
+    if (heightZero && widthZero && shapeNone && upperZero && lowerZero) {
+        return false;
+    }
+
+    return true;
+}
+
+// ============================================================================
 // SENSOR READING
 // ============================================================================
 
 void readSensors() {
+    // Don't read sensors if tank is not configured
+    if (!isTankConfigured()) {
+        // Set telemetry to zero values when not configured
+        iotDevice.telemetryData.waterLevel.value = 0.0f;
+        iotDevice.telemetryData.waterHeight.value = 0.0f;
+        iotDevice.telemetryData.currInflow.value = 0.0f;
+        iotDevice.telemetryData.pumpStatus.value = 0;
+        return;
+    }
+
     // Read ultrasonic sensor
     float distance = sensorManager.readDistance();
 
@@ -103,6 +136,16 @@ float calculateInflowRate(float currentHeight) {
 // ============================================================================
 
 void controlPump() {
+    // Don't control pump if tank is not configured
+    if (!isTankConfigured()) {
+        // Ensure pump is OFF when not configured
+        if (relayController.isPumpOn()) {
+            relayController.turnOff();
+            DEBUG_PRINTLN("[Control] Tank not configured - pump disabled");
+        }
+        return;
+    }
+
     bool shouldPumpBeOn = false;
 
     // Check control mode
