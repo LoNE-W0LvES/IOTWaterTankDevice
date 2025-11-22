@@ -39,10 +39,11 @@ struct WaterTankDeviceConfig {
 /**
  * @brief Custom control data fields for water tank
  * These fields are updated by the server/app to control the device
+ * Note: System is ALWAYS in auto mode. pumpSwitch allows manual override
+ * with safety limits based on thresholds.
  */
 struct WaterTankControlData {
     IoTField<bool> pumpSwitch{"pumpSwitch", false, "Pump Switch", "boolean"};
-    IoTField<bool> autoMode{"autoMode", true, "Auto Mode", "boolean"};
 };
 
 // ============================================================================

@@ -147,30 +147,39 @@ void controlPump() {
         return;
     }
 
+    // ALWAYS use threshold-based auto mode
+    float waterLevel = iotDevice.telemetryData.waterLevel.value;
+    float upperThreshold = iotDevice.deviceConfig.upperThreshold.value;
+    float lowerThreshold = iotDevice.deviceConfig.lowerThreshold.value;
+
     bool shouldPumpBeOn = false;
 
-    // Check control mode
-    if (iotDevice.controlData.autoMode.value) {
-        // Auto mode - threshold-based control
-        float waterLevel = iotDevice.telemetryData.waterLevel.value;
-        float upperThreshold = iotDevice.deviceConfig.upperThreshold.value;
-        float lowerThreshold = iotDevice.deviceConfig.lowerThreshold.value;
-
-        if (waterLevel <= lowerThreshold && !relayController.isPumpOn()) {
-            shouldPumpBeOn = true;
-            DEBUG_PRINTF("[Control] Auto: Level %.1f%% <= %.1f%%, pump ON\n",
-                        waterLevel, lowerThreshold);
-        } else if (waterLevel >= upperThreshold && relayController.isPumpOn()) {
-            shouldPumpBeOn = false;
-            DEBUG_PRINTF("[Control] Auto: Level %.1f%% >= %.1f%%, pump OFF\n",
-                        waterLevel, upperThreshold);
+    // Auto threshold logic with hysteresis
+    if (waterLevel <= lowerThreshold && !relayController.isPumpOn()) {
+        shouldPumpBeOn = true;
+        DEBUG_PRINTF("[Control] Auto: Level %.1f%% <= %.1f%%, pump ON\n",
+                    waterLevel, lowerThreshold);
+    } else if (waterLevel >= upperThreshold && relayController.isPumpOn()) {
+        shouldPumpBeOn = false;
+        DEBUG_PRINTF("[Control] Auto: Level %.1f%% >= %.1f%%, pump OFF\n",
+                    waterLevel, upperThreshold);
+    } else {
+        // Between thresholds - check for manual override
+        if (iotDevice.controlData.pumpSwitch.value) {
+            // Manual override to turn ON - only allowed if below upper threshold
+            if (waterLevel < upperThreshold) {
+                shouldPumpBeOn = true;
+                DEBUG_PRINTF("[Control] Manual ON: Level %.1f%% < %.1f%%\n",
+                            waterLevel, upperThreshold);
+            } else {
+                DEBUG_PRINTF("[Control] Manual ON blocked: Level %.1f%% >= %.1f%%\n",
+                            waterLevel, upperThreshold);
+                shouldPumpBeOn = false;
+            }
         } else {
-            // Maintain current state (hysteresis)
+            // Maintain current state or manual OFF
             shouldPumpBeOn = relayController.isPumpOn();
         }
-    } else {
-        // Manual mode - use server/app command
-        shouldPumpBeOn = iotDevice.controlData.pumpSwitch.value;
     }
 
     // Update pump state
@@ -191,12 +200,13 @@ void updateDisplay() {
     float waterLevel = iotDevice.telemetryData.waterLevel.value;
     float waterHeight = iotDevice.telemetryData.waterHeight.value;
     bool pumpOn = relayController.isPumpOn();
-    bool autoMode = iotDevice.controlData.autoMode.value;
 
     // Get WiFi info for display
     int rssi = iotDevice.getWiFiManager().getRSSI();
     bool wifiConnected = iotDevice.isWiFiConnected();
-    String pumpMode = autoMode ? "Auto" : "Manual";
+
+    // Always in Auto mode
+    String pumpMode = "Auto";
 
     // Update display with all required parameters
     displayManager.update(waterLevel, waterHeight, pumpOn, pumpMode, rssi, wifiConnected);
@@ -228,23 +238,44 @@ void handleButtons() {
             break;
 
         case BTN2_PRESSED:
-            iotDevice.controlData.autoMode.value = false;
-            iotDevice.controlData.pumpSwitch.value = true;
-            DEBUG_PRINTLN("[Button] Manual pump ON");
-            break;
-
-        case BTN3_PRESSED:
+            // Manual pump ON - only if water level < upper threshold
             {
-                bool newMode = !iotDevice.controlData.autoMode.value;
-                iotDevice.controlData.autoMode.value = newMode;
-                DEBUG_PRINTF("[Button] Mode: %s\n", newMode ? "Auto" : "Manual");
+                float waterLevel = iotDevice.telemetryData.waterLevel.value;
+                float upperThreshold = iotDevice.deviceConfig.upperThreshold.value;
+
+                if (waterLevel < upperThreshold) {
+                    iotDevice.controlData.pumpSwitch.value = true;
+                    DEBUG_PRINTF("[Button] Manual pump ON (level %.1f%% < %.1f%%)\n",
+                                waterLevel, upperThreshold);
+                } else {
+                    DEBUG_PRINTF("[Button] Manual ON blocked - tank full (%.1f%% >= %.1f%%)\n",
+                                waterLevel, upperThreshold);
+                    displayManager.showMessage("Tank Full", "Cannot turn ON", 2000);
+                }
             }
             break;
 
+        case BTN3_PRESSED:
+            // BTN3 - Reserved for future use
+            DEBUG_PRINTLN("[Button] BTN3 - No function");
+            break;
+
         case BTN4_PRESSED:
-            iotDevice.controlData.autoMode.value = false;
-            iotDevice.controlData.pumpSwitch.value = false;
-            DEBUG_PRINTLN("[Button] Manual pump OFF");
+            // Manual pump OFF - only if water level >= lower threshold
+            {
+                float waterLevel = iotDevice.telemetryData.waterLevel.value;
+                float lowerThreshold = iotDevice.deviceConfig.lowerThreshold.value;
+
+                if (waterLevel >= lowerThreshold) {
+                    iotDevice.controlData.pumpSwitch.value = false;
+                    DEBUG_PRINTF("[Button] Manual pump OFF (level %.1f%% >= %.1f%%)\n",
+                                waterLevel, lowerThreshold);
+                } else {
+                    DEBUG_PRINTF("[Button] Manual OFF blocked - tank low (%.1f%% < %.1f%%)\n",
+                                waterLevel, lowerThreshold);
+                    displayManager.showMessage("Tank Low", "Cannot turn OFF", 2000);
+                }
+            }
             break;
 
         case BTN5_LONG_PRESS:
@@ -384,13 +415,6 @@ String serializeControl() {
     pumpSwitch["value"] = iotDevice.controlData.pumpSwitch.value;
     pumpSwitch["lastModified"] = iotDevice.controlData.pumpSwitch.lastModified;
 
-    JsonObject autoMode = doc.createNestedObject("autoMode");
-    autoMode["key"] = "autoMode";
-    autoMode["label"] = "Auto Mode";
-    autoMode["type"] = "boolean";
-    autoMode["value"] = iotDevice.controlData.autoMode.value;
-    autoMode["lastModified"] = iotDevice.controlData.autoMode.lastModified;
-
     // System control fields
     JsonObject configUpdate = doc.createNestedObject("config_update");
     configUpdate["key"] = "config_update";
@@ -418,13 +442,6 @@ bool deserializeControl(const String& body) {
         iotDevice.controlData.pumpSwitch.value = doc["pumpSwitch"]["value"].as<bool>();
         if (doc["pumpSwitch"].containsKey("lastModified")) {
             iotDevice.controlData.pumpSwitch.lastModified = doc["pumpSwitch"]["lastModified"].as<uint64_t>();
-        }
-    }
-
-    if (doc.containsKey("autoMode") && doc["autoMode"].containsKey("value")) {
-        iotDevice.controlData.autoMode.value = doc["autoMode"]["value"].as<bool>();
-        if (doc["autoMode"].containsKey("lastModified")) {
-            iotDevice.controlData.autoMode.lastModified = doc["autoMode"]["lastModified"].as<uint64_t>();
         }
     }
 
