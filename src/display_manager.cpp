@@ -131,24 +131,21 @@ void DisplayManager::drawNetworkScreen(int rssi, bool wifiConnected) {
     display.setTextSize(1);
 
     if (isAPMode) {
-        // AP MODE - Setup screen (128x64 display)
+        // AP MODE - Setup screen (128x64 display) - compact layout
         display.setCursor(0, 0);
         display.setTextSize(1);
         display.println("=== SETUP MODE ===");
 
         display.setCursor(0, 12);
         display.print("SSID:");
-        display.setCursor(0, 20);
         display.println(ssidName);
 
-        display.setCursor(0, 30);
+        display.setCursor(0, 24);
         display.print("Pass:");
-        display.setCursor(0, 38);
         display.println(password);
 
-        display.setCursor(0, 48);
+        display.setCursor(0, 36);
         display.print("IP:");
-        display.setCursor(0, 56);
         display.println(ipAddress);
     } else {
         // CLIENT MODE - Normal network info
