@@ -188,6 +188,7 @@ public:
 
     /**
      * @brief Start local web server for offline app access
+     * Automatically selects correct mode based on WiFi state
      * @param port Web server port (default: 80)
      */
     void startWebServer(uint16_t port = 80) {
@@ -199,15 +200,16 @@ public:
         // Set up web server callbacks
         setupWebServerCallbacks();
 
-        // Enable provisioning if in AP mode
-        if (wifiManager.getMode() == IOT_WIFI_AP_MODE) {
-            webServer.enableProvisioning(true);
-        }
+        // Select mode based on WiFi state
+        WebServerMode mode = (wifiManager.getMode() == IOT_WIFI_AP_MODE)
+                            ? WS_MODE_PROVISIONING
+                            : WS_MODE_CLIENT;
 
-        webServer.begin();
+        webServer.begin(mode);
         webServerEnabled = true;
 
-        Serial.println("[IoTDevice] Web server started");
+        Serial.printf("[IoTDevice] Web server started in %s mode\n",
+                     mode == WS_MODE_PROVISIONING ? "PROVISIONING" : "CLIENT");
     }
 
     /**
@@ -239,10 +241,18 @@ public:
         bool wasConnected = wifiManager.isConnected();
         bool isConnected = wifiManager.updateConnection();
 
-        // If just connected, update IP address in config
+        // If just connected, update IP address and restart webserver in client mode
         if (!wasConnected && isConnected) {
             systemConfig.ip_address.value = wifiManager.getIPAddress();
             systemConfig.ip_address.lastModified = getCurrentTimestamp();
+
+            // Restart webserver in client mode if it was running in provisioning mode
+            if (webServerEnabled) {
+                webServer.stop();
+                webServerEnabled = false;
+                delay(100);
+                startWebServer();  // Will start in CLIENT mode
+            }
         }
 
         // Update time tracking
@@ -295,12 +305,12 @@ public:
     void startAPMode() {
         wifiManager.startAP();
 
-        // Start web server for provisioning
+        // Start web server in provisioning mode
         if (!webServerEnabled) {
-            webServer.enableProvisioning(true);
             setupWebServerCallbacks();
-            webServer.begin();
+            webServer.begin(WS_MODE_PROVISIONING);
             webServerEnabled = true;
+            Serial.println("[IoTDevice] Web server started in PROVISIONING mode");
         }
     }
 
@@ -465,8 +475,27 @@ private:
      * @brief Setup web server callbacks
      */
     void setupWebServerCallbacks() {
-        // GET /api/status callback
-        webServer.onGetStatus([this]() -> String {
+        // WiFi provisioning callbacks (AP mode)
+        webServer.onSaveWiFi([this](const String& ssid, const String& password,
+                                   const String& dashboardUser, const String& dashboardPass) {
+            Serial.printf("[IoTDevice] Saving WiFi: %s\n", ssid.c_str());
+            Serial.printf("[IoTDevice] Dashboard credentials: %s\n", dashboardUser.c_str());
+
+            // Save WiFi credentials
+            connectWiFi(ssid, password);
+
+            // Save dashboard credentials
+            if (dashboardUser.length() > 0 && dashboardPass.length() > 0) {
+                storage.saveDashboardCredentials(dashboardUser, dashboardPass);
+            }
+        });
+
+        webServer.onScanWiFi([this]() -> String {
+            return scanWiFiNetworks();
+        });
+
+        // Telemetry callback (Client mode)
+        webServer.onGetTelemetry([this]() -> String {
             DynamicJsonDocument doc(2048);
             // User should override this to include their telemetry data
             doc["timestamp"] = getCurrentTimestamp();
@@ -477,20 +506,18 @@ private:
             return response;
         });
 
-        // GET /api/config callback
-        webServer.onGetConfig([this]() -> String {
+        // Control callbacks (Client mode)
+        webServer.onGetControl([this]() -> String {
             DynamicJsonDocument doc(2048);
-            // User should override this to include their config data
-            doc["force_update"] = systemConfig.force_update.value;
-            doc["ip_address"] = systemConfig.ip_address.value;
-            doc["auto_update"] = systemConfig.auto_update.value;
+            // User should override this to include their control data with timestamps
+            doc["config_update"] = systemControl.config_update.value;
+            doc["config_update_lastModified"] = systemControl.config_update.lastModified;
 
             String response;
             serializeJson(doc, response);
             return response;
         });
 
-        // POST /api/control callback
         webServer.onSetControl([this](const String& body) -> bool {
             DynamicJsonDocument doc(2048);
             DeserializationError error = deserializeJson(doc, body);
@@ -504,14 +531,50 @@ private:
             return true;
         });
 
-        // WiFi provisioning callbacks
-        webServer.onSaveWiFi([this](const String& ssid, const String& password) {
-            Serial.printf("[IoTDevice] Saving WiFi: %s\n", ssid.c_str());
-            connectWiFi(ssid, password);
+        // Config callbacks (Client mode)
+        webServer.onGetConfig([this]() -> String {
+            DynamicJsonDocument doc(2048);
+            // User should override this to include their config data
+            doc["force_update"] = systemConfig.force_update.value;
+            doc["force_update_lastModified"] = systemConfig.force_update.lastModified;
+            doc["ip_address"] = systemConfig.ip_address.value;
+            doc["ip_address_lastModified"] = systemConfig.ip_address.lastModified;
+            doc["auto_update"] = systemConfig.auto_update.value;
+            doc["auto_update_lastModified"] = systemConfig.auto_update.lastModified;
+
+            String response;
+            serializeJson(doc, response);
+            return response;
         });
 
-        webServer.onScanWiFi([this]() -> String {
-            return scanWiFiNetworks();
+        webServer.onSetConfig([this](const String& body) -> bool {
+            DynamicJsonDocument doc(2048);
+            DeserializationError error = deserializeJson(doc, body);
+
+            if (error) {
+                return false;
+            }
+
+            // Handle config updates
+            // User should override this to handle their config data
+            return true;
+        });
+
+        // Timestamp callbacks (Client mode)
+        webServer.onGetTimestamp([this]() -> String {
+            DynamicJsonDocument doc(256);
+            doc["timestamp"] = getCurrentTimestamp();
+            doc["synced"] = isTimeSynced();
+
+            String response;
+            serializeJson(doc, response);
+            return response;
+        });
+
+        webServer.onSetTimestamp([this](uint64_t timestamp) -> bool {
+            syncManager.setServerTime(timestamp);
+            Serial.printf("[IoTDevice] Time synced from app: %llu\n", timestamp);
+            return true;
         });
     }
 };
