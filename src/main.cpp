@@ -89,6 +89,21 @@ void setup() {
     if (!iotDevice.connectWiFi()) {
         DEBUG_PRINTLN("[Setup] No saved WiFi - starting AP mode");
         iotDevice.startAPMode();
+
+        // Get AP SSID and set display info immediately
+        String deviceId = DEVICE_ID;
+        String apSSID = "IoTDevice-" + deviceId;
+        if (deviceId.length() == 0) {
+            apSSID = "IoTDevice-" + WiFi.macAddress().substring(9);
+        }
+        apSSID.replace(":", "");
+
+        displayManager.setAPInfo(
+            apSSID,
+            "iot-setup-password",
+            WiFi.softAPIP().toString()
+        );
+
         displayManager.showMessage("Setup Mode", "Connect via App");
     }
 
@@ -144,24 +159,7 @@ void setup() {
             displayManager.showMessage("No Credentials", "Setup Required", 5000);
         }
     } else {
-        DEBUG_PRINTLN("[Setup] Starting AP mode for provisioning");
-        iotDevice.startAPMode();
-
-        // Get AP SSID (IoTDevice-{deviceID or MAC})
-        String deviceId = DEVICE_ID;
-        String apSSID = "IoTDevice-" + deviceId;
-        if (deviceId.length() == 0) {
-            apSSID = "IoTDevice-" + WiFi.macAddress().substring(9);
-        }
-        apSSID.replace(":", "");  // Remove colons from MAC
-
-        // Update display with AP credentials for user to connect
-        displayManager.setAPInfo(
-            apSSID,
-            "iot-setup-password",  // Default AP password
-            WiFi.softAPIP().toString()
-        );
-
+        DEBUG_PRINTLN("[Setup] WiFi connection timeout - staying in AP mode");
         displayManager.showMessage("Setup Mode", "Check App", 5000);
     }
 
