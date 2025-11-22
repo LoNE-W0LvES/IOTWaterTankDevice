@@ -27,6 +27,9 @@ public:
     // Set network info
     void setNetworkInfo(const String& ip, const String& ssid);
 
+    // Set AP mode info (includes password)
+    void setAPInfo(const String& ssid, const String& password, const String& ip);
+
     // Set tank settings
     void setTankSettings(float height, float width, const String& shape,
                         float upperThreshold, float lowerThreshold);
@@ -53,6 +56,7 @@ private:
     // Network info
     String ipAddress;
     String ssidName;
+    String password;  // For AP mode only
 
     // Tank settings
     float tankHeight;

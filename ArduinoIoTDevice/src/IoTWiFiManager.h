@@ -136,6 +136,21 @@ public:
      */
     String getSSID();
 
+    /**
+     * @brief Get AP SSID (when in AP mode)
+     */
+    String getAPSSID();
+
+    /**
+     * @brief Get AP password
+     */
+    String getAPPassword();
+
+    /**
+     * @brief Check if currently in AP mode
+     */
+    bool isAPMode();
+
     // ========================================================================
     // NETWORK SCANNING
     // ========================================================================

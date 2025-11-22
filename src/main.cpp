@@ -146,6 +146,14 @@ void setup() {
     } else {
         DEBUG_PRINTLN("[Setup] Starting AP mode for provisioning");
         iotDevice.startAPMode();
+
+        // Update display with AP credentials for user to connect
+        displayManager.setAPInfo(
+            iotDevice.getWiFiManager().getAPSSID(),
+            iotDevice.getWiFiManager().getAPPassword(),
+            WiFi.softAPIP().toString()
+        );
+
         displayManager.showMessage("Setup Mode", "Check App", 5000);
     }
 

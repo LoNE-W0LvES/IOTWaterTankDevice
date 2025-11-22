@@ -191,6 +191,22 @@ String IoTWiFiManager::getSSID() {
     return WiFi.SSID();
 }
 
+String IoTWiFiManager::getAPSSID() {
+    String apSSID = "IoTDevice-" + deviceId;
+    if (deviceId.length() == 0) {
+        apSSID = "IoTDevice-" + getMACAddress().substring(9);  // Last 8 chars of MAC
+    }
+    return apSSID;
+}
+
+String IoTWiFiManager::getAPPassword() {
+    return apPassword;
+}
+
+bool IoTWiFiManager::isAPMode() {
+    return currentMode == IOT_WIFI_AP_MODE;
+}
+
 // ============================================================================
 // NETWORK SCANNING
 // ============================================================================

@@ -125,42 +125,67 @@ void DisplayManager::drawStatusScreen(float waterLevel, float waterLevelPercent,
 }
 
 void DisplayManager::drawNetworkScreen(int rssi, bool wifiConnected) {
-    // Screen 2: Network info (IP, RSSI, uptime)
+    // Screen 2: Network info (IP, RSSI, uptime) or AP info (SSID, password, IP)
 
     // Title
     display.setTextSize(1);
     display.setCursor(0, 0);
-    display.println("NETWORK INFO");
 
-    // WiFi status
-    display.setCursor(0, 12);
-    display.print("WiFi: ");
-    display.println(wifiConnected ? "Connected" : "Disconnected");
+    // Check if in AP mode (password is set)
+    bool isAPMode = (password.length() > 0);
 
-    // SSID
-    if (ssidName.length() > 0) {
+    if (isAPMode) {
+        display.println("AP MODE");
+
+        // SSID
+        display.setCursor(0, 12);
+        display.print("SSID:");
         display.setCursor(0, 22);
-        display.print("SSID: ");
         display.println(ssidName);
-    }
 
-    // IP Address
-    display.setCursor(0, 32);
-    display.print("IP: ");
-    display.println(ipAddress);
-
-    // Signal strength
-    if (wifiConnected) {
+        // Password
+        display.setCursor(0, 32);
+        display.print("Password:");
         display.setCursor(0, 42);
-        display.print("RSSI: ");
-        display.print(rssi);
-        display.println(" dBm");
-    }
+        display.println(password);
 
-    // Uptime
-    display.setCursor(0, 52);
-    display.print("Up: ");
-    display.println(getUptimeString());
+        // IP Address
+        display.setCursor(0, 52);
+        display.print("IP: ");
+        display.println(ipAddress);
+    } else {
+        display.println("NETWORK INFO");
+
+        // WiFi status
+        display.setCursor(0, 12);
+        display.print("WiFi: ");
+        display.println(wifiConnected ? "Connected" : "Disconnected");
+
+        // SSID
+        if (ssidName.length() > 0) {
+            display.setCursor(0, 22);
+            display.print("SSID: ");
+            display.println(ssidName);
+        }
+
+        // IP Address
+        display.setCursor(0, 32);
+        display.print("IP: ");
+        display.println(ipAddress);
+
+        // Signal strength
+        if (wifiConnected) {
+            display.setCursor(0, 42);
+            display.print("RSSI: ");
+            display.print(rssi);
+            display.println(" dBm");
+        }
+
+        // Uptime
+        display.setCursor(0, 52);
+        display.print("Up: ");
+        display.println(getUptimeString());
+    }
 
     // Screen indicator
     display.setCursor(0, 56);
@@ -271,6 +296,13 @@ DisplayScreen DisplayManager::getCurrentScreen() {
 void DisplayManager::setNetworkInfo(const String& ip, const String& ssid) {
     ipAddress = ip;
     ssidName = ssid;
+    password = "";  // Clear password for client mode
+}
+
+void DisplayManager::setAPInfo(const String& ssid, const String& pw, const String& ip) {
+    ssidName = ssid;
+    password = pw;
+    ipAddress = ip;
 }
 
 void DisplayManager::setTankSettings(float height, float width, const String& shape,
