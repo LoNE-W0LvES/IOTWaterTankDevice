@@ -89,7 +89,7 @@ void setup() {
     if (!iotDevice.connectWiFi()) {
         DEBUG_PRINTLN("[Setup] No saved WiFi - starting AP mode");
         iotDevice.startAPMode();
-        displayManager.showStatus("Setup Mode", "Connect to WiFi", "");
+        displayManager.showMessage("Setup Mode", "Connect via App");
     }
 
     // Wait for WiFi connection
@@ -125,16 +125,16 @@ void setup() {
                 systemInitialized = true;
             } else {
                 DEBUG_PRINTLN("[Setup] Login failed - device must be registered by admin");
-                displayManager.showStatus("Login Failed", "Contact Admin", "");
+                displayManager.showMessage("Login Failed", "Contact Admin", 5000);
             }
         } else {
             DEBUG_PRINTLN("[Setup] No dashboard credentials - need provisioning");
-            displayManager.showStatus("No Credentials", "Setup Required", "");
+            displayManager.showMessage("No Credentials", "Setup Required", 5000);
         }
     } else {
         DEBUG_PRINTLN("[Setup] Starting AP mode for provisioning");
         iotDevice.startAPMode();
-        displayManager.showStatus("Setup Mode", DEVICE_ID, iotDevice.getIPAddress().c_str());
+        displayManager.showMessage("Setup Mode", "Check App", 5000);
     }
 
     // Set library intervals

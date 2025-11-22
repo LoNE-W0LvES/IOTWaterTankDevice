@@ -178,9 +178,9 @@ private:
     int connectionAttempts;
 
     // Configuration
-    static const int WIFI_CONNECT_TIMEOUT = 20000;      // 20 seconds
-    static const int WIFI_RECONNECT_INTERVAL = 30000;   // 30 seconds
-    static const int MAX_CONNECT_ATTEMPTS = 3;
+    static const int IOT_WIFI_CONNECT_TIMEOUT = 20000;      // 20 seconds
+    static const int IOT_WIFI_RECONNECT_INTERVAL = 30000;   // 30 seconds
+    static const int IOT_MAX_CONNECT_ATTEMPTS = 3;
 
     /**
      * @brief Load saved credentials from storage

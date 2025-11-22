@@ -90,6 +90,9 @@
 // Credentials are stored in NVS: PREF_DASHBOARD_USER and PREF_DASHBOARD_PASS
 // User enters credentials via WiFi setup portal at http://192.168.4.1
 
+// API Endpoints
+#define API_FIRMWARE_LATEST "/api/firmware/latest"
+
 // ============================================================================
 // WIFI CONFIGURATION
 // ============================================================================

@@ -145,33 +145,12 @@ void controlPump() {
 
 void updateDisplay() {
     float waterLevel = iotDevice.telemetryData.waterLevel.value;
-    float inflow = iotDevice.telemetryData.currInflow.value;
+    float waterHeight = iotDevice.telemetryData.waterHeight.value;
     bool pumpOn = relayController.isPumpOn();
     bool autoMode = iotDevice.controlData.autoMode.value;
 
-    switch (displayScreenMode) {
-        case 0:  // Status screen
-            displayManager.showWaterLevel(waterLevel, inflow, pumpOn, autoMode);
-            break;
-        case 1:  // Network screen
-            displayManager.showNetworkInfo(
-                iotDevice.isWiFiConnected() ? "Connected" : "Disconnected",
-                iotDevice.getIPAddress().c_str(),
-                iotDevice.isAuthenticated() ? "Authenticated" : "Not authenticated"
-            );
-            break;
-        case 2:  // Settings screen
-            char thresholds[32];
-            snprintf(thresholds, sizeof(thresholds), "L:%.0f%% H:%.0f%%",
-                    iotDevice.deviceConfig.lowerThreshold.value,
-                    iotDevice.deviceConfig.upperThreshold.value);
-            displayManager.showSettings(
-                iotDevice.deviceConfig.tankHeight.value,
-                thresholds,
-                autoMode ? "Auto" : "Manual"
-            );
-            break;
-    }
+    // Use update() method to refresh display with current data
+    displayManager.update(waterLevel, waterHeight, pumpOn, autoMode);
 }
 
 // ============================================================================
@@ -180,35 +159,37 @@ void updateDisplay() {
 
 void handleButtons() {
     // BTN1 - Cycle display screens
-    if (buttonHandler.isBtn1Pressed()) {
-        displayScreenMode = (displayScreenMode + 1) % 3;
-        DEBUG_PRINTF("[Button] Display screen: %d\n", displayScreenMode);
+    if (buttonHandler.isButtonPressed(1)) {
+        displayManager.nextScreen();
+        DEBUG_PRINTLN("[Button] Next screen");
     }
 
     // BTN2 - Manual pump ON
-    if (buttonHandler.isBtn2Pressed()) {
+    if (buttonHandler.isButtonPressed(2)) {
         iotDevice.controlData.autoMode.value = false;
         iotDevice.controlData.pumpSwitch.value = true;
         DEBUG_PRINTLN("[Button] Manual pump ON");
     }
 
     // BTN3 - Toggle Auto/Manual mode
-    if (buttonHandler.isBtn3Pressed()) {
+    if (buttonHandler.isButtonPressed(3)) {
         bool newMode = !iotDevice.controlData.autoMode.value;
         iotDevice.controlData.autoMode.value = newMode;
         DEBUG_PRINTF("[Button] Mode: %s\n", newMode ? "Auto" : "Manual");
     }
 
     // BTN4 - Manual pump OFF
-    if (buttonHandler.isBtn4Pressed()) {
+    if (buttonHandler.isButtonPressed(4)) {
         iotDevice.controlData.autoMode.value = false;
         iotDevice.controlData.pumpSwitch.value = false;
         DEBUG_PRINTLN("[Button] Manual pump OFF");
     }
 
-    // BTN5 - WiFi reset (long press)
-    if (buttonHandler.isBtn5LongPressed()) {
+    // BTN5 - WiFi reset
+    if (buttonHandler.isButtonPressed(5)) {
         DEBUG_PRINTLN("[Button] WiFi reset - restarting in AP mode");
+        displayManager.showMessage("WiFi Reset", "Restarting...");
+        delay(1000);
         iotDevice.getStorage().clearWiFiCredentials();
         iotDevice.getStorage().clearDeviceToken();
         ESP.restart();
@@ -233,7 +214,7 @@ void handleSystemCommands() {
     // Check force update (OTA firmware)
     if (iotDevice.systemConfig.force_update.value) {
         DEBUG_PRINTLN("[System] Firmware update requested");
-        displayManager.showStatus("Updating", "Firmware", "Please wait...");
+        displayManager.showMessage("Firmware Update", "Please wait...", 3000);
         // TODO: Implement OTA update logic
         // performOTAUpdate();
         iotDevice.systemConfig.force_update.value = false;

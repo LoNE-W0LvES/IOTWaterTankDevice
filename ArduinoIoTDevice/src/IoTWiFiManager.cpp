@@ -78,7 +78,7 @@ bool IoTWiFiManager::updateConnection() {
                 currentStatus = IOT_WIFI_FAILED;
                 Serial.println("[WiFi] Connection timeout");
 
-                if (connectionAttempts >= MAX_CONNECT_ATTEMPTS) {
+                if (connectionAttempts >= IOT_MAX_CONNECT_ATTEMPTS) {
                     Serial.println("[WiFi] Max attempts reached, starting AP mode");
                     startAP();
                 }
@@ -98,7 +98,7 @@ bool IoTWiFiManager::updateConnection() {
         case IOT_WIFI_DISCONNECTED:
         case IOT_WIFI_FAILED:
             // Auto-reconnect logic
-            if (millis() - lastReconnectAttempt > WIFI_RECONNECT_INTERVAL) {
+            if (millis() - lastReconnectAttempt > IOT_WIFI_RECONNECT_INTERVAL) {
                 Serial.println("[WiFi] Attempting reconnect...");
                 startClient();
             }
@@ -260,5 +260,5 @@ bool IoTWiFiManager::loadCredentials() {
 }
 
 bool IoTWiFiManager::isConnectTimeout() {
-    return (millis() - connectStartTime) > WIFI_CONNECT_TIMEOUT;
+    return (millis() - connectStartTime) > IOT_WIFI_CONNECT_TIMEOUT;
 }

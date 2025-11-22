@@ -89,12 +89,8 @@ public:
         if (label.length() > 0) obj["label"] = label;
         if (type.length() > 0) obj["type"] = type;
 
-        // Handle different types
-        if constexpr (std::is_same_v<T, String>) {
-            obj["value"] = value.c_str();
-        } else {
-            obj["value"] = value;
-        }
+        // Handle String type specially
+        obj["value"] = value;
 
         if (lastModified > 0) {
             obj["lastModified"] = lastModified;
@@ -111,20 +107,8 @@ public:
         if (obj.containsKey("label")) label = obj["label"].as<String>();
         if (obj.containsKey("type")) type = obj["type"].as<String>();
 
-        // Handle different types
-        if constexpr (std::is_same_v<T, String>) {
-            value = obj["value"].as<String>();
-        } else if constexpr (std::is_same_v<T, bool>) {
-            value = obj["value"].as<bool>();
-        } else if constexpr (std::is_same_v<T, int>) {
-            value = obj["value"].as<int>();
-        } else if constexpr (std::is_same_v<T, float>) {
-            value = obj["value"].as<float>();
-        } else if constexpr (std::is_same_v<T, double>) {
-            value = obj["value"].as<double>();
-        } else {
-            value = obj["value"].as<T>();
-        }
+        // Let ArduinoJson handle type conversion
+        value = obj["value"].as<T>();
 
         if (obj.containsKey("lastModified")) {
             lastModified = obj["lastModified"].as<uint64_t>();
