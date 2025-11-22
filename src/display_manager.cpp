@@ -131,26 +131,29 @@ void DisplayManager::drawNetworkScreen(int rssi, bool wifiConnected) {
     display.setTextSize(1);
 
     if (isAPMode) {
-        // AP MODE - Setup screen (128x64 display) - compact layout
-        // Font size 1: 8px height per line, spacing: 12px between lines
+        // AP MODE - Setup screen (128x64 display)
+        // Font size 1: 6px width, 8px height per character
+        // Screen width: 128px = ~21 characters max per line
+        // Password "Pass:iot-setup-password" = 23 chars, WILL WRAP!
+        // Use 20px spacing to account for text wrapping
         display.setTextSize(1);
 
-        // Header (Y=0, 8px tall)
+        // Header (Y=0)
         display.setCursor(0, 0);
-        display.print("=== SETUP MODE ===");
+        display.print("SETUP MODE");
 
-        // SSID line (Y=14, leaves 6px gap from header)
-        display.setCursor(0, 14);
+        // SSID line (Y=12)
+        display.setCursor(0, 12);
         display.print("SSID:");
         display.print(ssidName);
 
-        // Password line (Y=26, 12px from SSID)
-        display.setCursor(0, 26);
+        // Password line (Y=30, 18px from SSID to allow wrap)
+        display.setCursor(0, 30);
         display.print("Pass:");
         display.print(password);
 
-        // IP line (Y=38, 12px from password)
-        display.setCursor(0, 38);
+        // IP line (Y=48, 18px from password to allow wrap)
+        display.setCursor(0, 48);
         display.print("IP:");
         display.print(ipAddress);
     } else {
