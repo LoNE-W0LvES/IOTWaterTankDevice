@@ -128,13 +128,14 @@ void IoTWiFiManager::startAP() {
 
     Serial.printf("[WiFi] Starting AP: %s\n", apSSID.c_str());
 
-    WiFi.mode(WIFI_AP);
+    // Use AP+STA mode to allow WiFi scanning while AP is active
+    WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(apSSID.c_str(), apPassword.c_str());
 
     currentMode = IOT_WIFI_AP_MODE;
     currentStatus = IOT_WIFI_CONNECTED;
 
-    Serial.printf("[WiFi] AP Started. IP: %s\n", WiFi.softAPIP().toString().c_str());
+    Serial.printf("[WiFi] AP Started (AP+STA mode). IP: %s\n", WiFi.softAPIP().toString().c_str());
 }
 
 void IoTWiFiManager::stopAP() {

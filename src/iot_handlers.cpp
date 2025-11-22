@@ -189,6 +189,9 @@ void controlPump() {
         } else {
             relayController.turnOff();
         }
+
+        // Reset manual override flag after acting on it
+        iotDevice.controlData.pumpSwitch.value = false;
     }
 }
 

@@ -105,20 +105,12 @@ void RelayController::update(float waterLevel, float upperThreshold, float lower
 }
 
 void RelayController::turnOn() {
-    if (currentMode == MODE_AUTO) {
-        Serial.println("[Relay] Cannot manually control in AUTO mode");
-        return;
-    }
-
+    // Allow direct control - mode checking is handled at higher level
     applyPumpState(true);
 }
 
 void RelayController::turnOff() {
-    if (currentMode == MODE_AUTO) {
-        Serial.println("[Relay] Cannot manually control in AUTO mode");
-        return;
-    }
-
+    // Allow direct control - mode checking is handled at higher level
     applyPumpState(false);
 }
 
