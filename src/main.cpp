@@ -122,8 +122,12 @@ void setup() {
         // Update IP address in system config
         iotDevice.systemConfig.ip_address.value = iotDevice.getIPAddress();
 
-        // Update display with network info
-        displayManager.setNetworkInfo(iotDevice.getIPAddress(), iotDevice.getWiFiManager().getSSID());
+        // Only show STA (client) info if not in AP mode
+        // If in AP+STA mode, keep showing AP info for provisioning
+        if (!iotDevice.getWiFiManager().isAPMode()) {
+            // Pure STA mode - show client network info
+            displayManager.setNetworkInfo(iotDevice.getIPAddress(), iotDevice.getWiFiManager().getSSID());
+        }
 
         // Start web server (automatically selects CLIENT mode)
         iotDevice.startWebServer();
