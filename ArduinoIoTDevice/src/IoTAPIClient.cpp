@@ -81,39 +81,6 @@ bool IoTAPIClient::login(const String& username, const String& password) {
     return false;
 }
 
-bool IoTAPIClient::registerDevice() {
-    Serial.println("[API] Registering device...");
-
-    DynamicJsonDocument doc(1024);
-    doc["hardwareId"] = hardwareId;
-    doc["deviceName"] = projectId + "-" + deviceName;
-    doc["projectId"] = mongoDeviceId;
-
-    JsonObject metadata = doc.createNestedObject("metadata");
-    metadata["chipModel"] = "ESP32";
-    metadata["firmwareVersion"] = firmwareVersion;
-
-    String payload;
-    serializeJson(doc, payload);
-
-    String response;
-    int statusCode = httpRequest("POST", "/api/device-auth/register", payload, response, false);
-
-    if (statusCode == 200 || statusCode == 201) {
-        DynamicJsonDocument responseDoc(1024);
-        DeserializationError error = deserializeJson(responseDoc, response);
-
-        if (!error && responseDoc.containsKey("deviceToken")) {
-            jwtToken = responseDoc["deviceToken"].as<String>();
-            saveToken(jwtToken);
-            Serial.println("[API] Device registered successfully");
-            return true;
-        }
-    }
-
-    Serial.printf("[API] Registration failed (HTTP %d)\n", statusCode);
-    return false;
-}
 
 bool IoTAPIClient::isAuthenticated() {
     if (jwtToken.length() > 0) {

@@ -125,8 +125,8 @@ void setup() {
             if (iotDevice.login(DASHBOARD_USER, DASHBOARD_PASS)) {
                 Serial.println("[Setup] Login successful!");
             } else {
-                Serial.println("[Setup] Trying registration...");
-                iotDevice.registerDevice();
+                Serial.println("[Setup] Login failed!");
+                Serial.println("[Setup] Device must be registered by admin on server first");
             }
         }
 

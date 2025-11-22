@@ -333,14 +333,6 @@ public:
         return success;
     }
 
-    bool registerDevice() {
-        bool success = apiClient.registerDevice();
-        if (success) {
-            syncTimeWithServer();
-        }
-        return success;
-    }
-
     bool isAuthenticated() {
         return apiClient.isAuthenticated();
     }

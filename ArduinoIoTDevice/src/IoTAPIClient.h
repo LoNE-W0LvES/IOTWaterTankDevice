@@ -50,12 +50,6 @@ public:
     bool login(const String& username, const String& password);
 
     /**
-     * @brief Register device (first-time setup)
-     * @return true if registration successful
-     */
-    bool registerDevice();
-
-    /**
      * @brief Check if authenticated (has valid token)
      */
     bool isAuthenticated();

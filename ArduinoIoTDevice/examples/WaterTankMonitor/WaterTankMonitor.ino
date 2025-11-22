@@ -163,7 +163,7 @@ void setup() {
         // Authenticate
         if (!iotDevice.isAuthenticated()) {
             if (!iotDevice.login(DASHBOARD_USER, DASHBOARD_PASS)) {
-                iotDevice.registerDevice();
+                Serial.println("[Setup] Login failed - device must be registered by admin");
             }
         }
 
