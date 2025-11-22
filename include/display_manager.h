@@ -57,6 +57,7 @@ private:
     String ipAddress;
     String ssidName;
     String password;  // For AP mode only
+    bool isAPMode;    // Track if in AP mode
 
     // Tank settings
     float tankHeight;

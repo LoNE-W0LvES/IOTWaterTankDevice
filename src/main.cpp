@@ -147,10 +147,18 @@ void setup() {
         DEBUG_PRINTLN("[Setup] Starting AP mode for provisioning");
         iotDevice.startAPMode();
 
+        // Get AP SSID (IoTDevice-{deviceID or MAC})
+        String deviceId = DEVICE_ID;
+        String apSSID = "IoTDevice-" + deviceId;
+        if (deviceId.length() == 0) {
+            apSSID = "IoTDevice-" + WiFi.macAddress().substring(9);
+        }
+        apSSID.replace(":", "");  // Remove colons from MAC
+
         // Update display with AP credentials for user to connect
         displayManager.setAPInfo(
-            iotDevice.getWiFiManager().getAPSSID(),
-            iotDevice.getWiFiManager().getAPPassword(),
+            apSSID,
+            "iot-setup-password",  // Default AP password
             WiFi.softAPIP().toString()
         );
 
