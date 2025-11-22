@@ -149,8 +149,13 @@ void updateDisplay() {
     bool pumpOn = relayController.isPumpOn();
     bool autoMode = iotDevice.controlData.autoMode.value;
 
-    // Use update() method to refresh display with current data
-    displayManager.update(waterLevel, waterHeight, pumpOn, autoMode);
+    // Get WiFi info for display
+    int rssi = iotDevice.getWiFiManager().getRSSI();
+    bool wifiConnected = iotDevice.isWiFiConnected();
+    String pumpMode = autoMode ? "Auto" : "Manual";
+
+    // Update display with all required parameters
+    displayManager.update(waterLevel, waterHeight, pumpOn, pumpMode, rssi, wifiConnected);
 }
 
 // ============================================================================
