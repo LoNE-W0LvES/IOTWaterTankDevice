@@ -99,7 +99,7 @@ void setup() {
 
         displayManager.setAPInfo(
             apSSID,
-            "iot-setup-password",
+            AP_PASSWORD,  // Use actual password from config.h
             WiFi.softAPIP().toString()
         );
 
