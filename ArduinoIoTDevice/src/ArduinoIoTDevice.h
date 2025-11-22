@@ -342,6 +342,10 @@ public:
         return wifiManager.startClient(ssid, password);
     }
 
+    void setCustomAPSSID(const String& ssid) {
+        wifiManager.setCustomAPSSID(ssid);
+    }
+
     void startAPMode() {
         wifiManager.startAP();
 

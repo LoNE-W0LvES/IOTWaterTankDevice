@@ -88,15 +88,14 @@ void setup() {
     DEBUG_PRINTLN("[Setup] Connecting to WiFi...");
     if (!iotDevice.connectWiFi()) {
         DEBUG_PRINTLN("[Setup] No saved WiFi - starting AP mode");
-        iotDevice.startAPMode();
 
-        // Get AP SSID and set display info immediately
-        String deviceId = DEVICE_ID;
-        String apSSID = "IoTDevice-" + deviceId;
-        if (deviceId.length() == 0) {
-            apSSID = "IoTDevice-" + WiFi.macAddress().substring(9);
-        }
-        apSSID.replace(":", "");
+        // Construct AP SSID from PROJECT_ID and DEVICE_NAME
+        // Format: IoTDevice-PROJECT_ID-DEVICE_NAME
+        String apSSID = "IoTDevice-" + String(PROJECT_ID) + "-" + String(DEVICE_NAME);
+
+        // Set custom SSID before starting AP mode
+        iotDevice.setCustomAPSSID(apSSID);
+        iotDevice.startAPMode();
 
         displayManager.setAPInfo(
             apSSID,

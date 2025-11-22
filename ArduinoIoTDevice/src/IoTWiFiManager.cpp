@@ -120,10 +120,21 @@ void IoTWiFiManager::disconnect() {
 // AP MODE
 // ============================================================================
 
+void IoTWiFiManager::setCustomAPSSID(const String& ssid) {
+    customAPSSID = ssid;
+}
+
 void IoTWiFiManager::startAP() {
-    String apSSID = "IoTDevice-" + deviceId;
-    if (deviceId.length() == 0) {
-        apSSID = "IoTDevice-" + getMACAddress().substring(9);  // Last 8 chars of MAC
+    String apSSID;
+
+    // Use custom SSID if set, otherwise construct from deviceId
+    if (customAPSSID.length() > 0) {
+        apSSID = customAPSSID;
+    } else {
+        apSSID = "IoTDevice-" + deviceId;
+        if (deviceId.length() == 0) {
+            apSSID = "IoTDevice-" + getMACAddress().substring(9);  // Last 8 chars of MAC
+        }
     }
 
     Serial.printf("[WiFi] Starting AP: %s\n", apSSID.c_str());
@@ -193,6 +204,11 @@ String IoTWiFiManager::getSSID() {
 }
 
 String IoTWiFiManager::getAPSSID() {
+    // Return custom SSID if set, otherwise construct from deviceId
+    if (customAPSSID.length() > 0) {
+        return customAPSSID;
+    }
+
     String apSSID = "IoTDevice-" + deviceId;
     if (deviceId.length() == 0) {
         apSSID = "IoTDevice-" + getMACAddress().substring(9);  // Last 8 chars of MAC

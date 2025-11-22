@@ -82,8 +82,13 @@ public:
     // ========================================================================
 
     /**
+     * @brief Set custom AP SSID (call before startAP)
+     */
+    void setCustomAPSSID(const String& ssid);
+
+    /**
      * @brief Start Access Point mode for provisioning
-     * AP SSID format: "IoTDevice-{deviceId}"
+     * AP SSID format: "IoTDevice-{deviceId}" or custom if set
      */
     void startAP();
 
@@ -186,6 +191,7 @@ private:
     IoTWiFiStatus currentStatus;
     String deviceId;
     String apPassword;
+    String customAPSSID;  // Custom AP SSID if set
     String savedSSID;
     String savedPassword;
     unsigned long connectStartTime;
