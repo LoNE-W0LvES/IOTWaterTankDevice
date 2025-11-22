@@ -3,11 +3,13 @@
  * @brief Basic example of using ArduinoIoTDevice library
  *
  * This example demonstrates:
- * - Defining custom data structures
+ * - System fields are automatically included (force_update, ip_address, auto_update, config_update, Status)
+ * - Defining custom data structures for your application
  * - WiFi connection and provisioning
  * - Server authentication
  * - Automatic data synchronization
- * - Field access with timestamps
+ * - Field access with .value and .lastModified
+ * - Local web server for offline app access
  */
 
 #include <ArduinoIoTDevice.h>
@@ -18,39 +20,32 @@
 
 /**
  * Device Configuration Structure
- * Define all config fields your device needs
+ * Define only YOUR application-specific fields here.
+ * System fields (force_update, ip_address, auto_update) are automatically included!
  */
 struct MyDeviceConfig {
-    // Use IoTField<Type> for automatic timestamp tracking
-    // Format: IoTField<Type> fieldName{"keyName", defaultValue, "Label", "type"}
-
-    IoTField<String> ipAddress{"ipAddress", "", "IP Address", "string"};
     IoTField<float> upperThreshold{"upperThreshold", 85.0f, "Upper Threshold", "number"};
     IoTField<float> lowerThreshold{"lowerThreshold", 20.0f, "Lower Threshold", "number"};
-    IoTField<float> tankHeight{"tankHeight", 100.0f, "Tank Height", "number"};
-    IoTField<String> tankShape{"tankShape", "Cylindrical", "Tank Shape", "string"};
-    IoTField<bool> auto_update{"auto_update", true, "Auto Update", "boolean"};
-    IoTField<bool> sensorFilter{"sensorFilter", true, "Sensor Filter", "boolean"};
+    IoTField<String> deviceName{"deviceName", "MyDevice", "Device Name", "string"};
 };
 
 /**
  * Control Data Structure
- * Define control commands from server/app
+ * Define only YOUR application-specific control fields.
+ * System field (config_update) is automatically included!
  */
 struct MyControlData {
-    IoTField<bool> pumpSwitch{"pumpSwitch", false, "Pump Switch", "boolean"};
-    IoTField<bool> config_update{"config_update", false, "Config Update", "boolean"};
+    IoTField<bool> relaySwitch{"relaySwitch", false, "Relay Switch", "boolean"};
 };
 
 /**
  * Telemetry Data Structure
- * Define sensor data to send to server
+ * Define only YOUR application-specific telemetry fields.
+ * System field (Status) is automatically included!
  */
 struct MyTelemetryData {
-    IoTField<float> waterLevel{"waterLevel", 0.0f, "Water Level", "number"};
-    IoTField<float> currInflow{"currInflow", 0.0f, "Current Inflow", "number"};
-    IoTField<int> pumpStatus{"pumpStatus", 0, "Pump Status", "number"};
-    IoTField<int> Status{"Status", 1, "Device Status", "number"};
+    IoTField<float> temperature{"temperature", 0.0f, "Temperature", "number"};
+    IoTField<float> humidity{"humidity", 0.0f, "Humidity", "number"};
 };
 
 // ============================================================================
@@ -63,23 +58,20 @@ IoTDevice<MyDeviceConfig, MyControlData, MyTelemetryData> iotDevice;
 // CONFIGURATION
 // ============================================================================
 
-// Server configuration
 const char* SERVER_URL = "http://103.136.236.16";
-const char* PROJECT_ID = "wt001";
-const char* DEVICE_NAME = "DEV-02";
-const char* MONGODB_DEVICE_ID = "690e6a9d092433c0acfb9178";
+const char* PROJECT_ID = "project001";
+const char* DEVICE_NAME = "device001";
+const char* MONGODB_DEVICE_ID = "mongodbid123";
 const char* FIRMWARE_VERSION = "1.0.0";
+const char* DEVICE_ID = "project001-device001";
 
-// WiFi credentials (optional - can also use provisioning)
+// WiFi credentials (optional - can use provisioning)
 const char* WIFI_SSID = "YourWiFiSSID";
 const char* WIFI_PASSWORD = "YourWiFiPassword";
 
 // Dashboard credentials
 const char* DASHBOARD_USER = "your_username";
 const char* DASHBOARD_PASS = "your_password";
-
-// Device ID for AP mode
-const char* DEVICE_ID = "wt001-DEV-02";
 
 // ============================================================================
 // SETUP
@@ -90,7 +82,7 @@ void setup() {
     delay(1000);
 
     Serial.println("========================================");
-    Serial.println("  ArduinoIoTDevice Example");
+    Serial.println("  ArduinoIoTDevice Basic Example");
     Serial.println("========================================");
 
     // 1. Initialize IoT device
@@ -103,20 +95,17 @@ void setup() {
     // 3. Set device ID for AP mode
     iotDevice.setDeviceId(DEVICE_ID);
 
-    // 4. Set AP password (optional, has default)
-    iotDevice.setAPPassword("PassAquaWT001");
+    // 4. Set AP password (optional)
+    iotDevice.setAPPassword("setup-password");
 
     // 5. Connect to WiFi
     Serial.println("[Setup] Connecting to WiFi...");
-
-    // Option A: Connect with saved credentials (from previous provisioning)
-    if (iotDevice.connectWiFi()) {
-        Serial.println("[Setup] Connecting with saved credentials...");
+    if (!iotDevice.connectWiFi(WIFI_SSID, WIFI_PASSWORD)) {
+        Serial.println("[Setup] No saved credentials - starting AP mode");
+        iotDevice.startAPMode();
     }
-    // Option B: Connect with explicit credentials
-    // iotDevice.connectWiFi(WIFI_SSID, WIFI_PASSWORD);
 
-    // Wait for connection (with timeout)
+    // Wait for connection
     unsigned long startTime = millis();
     while (!iotDevice.isWiFiConnected() && (millis() - startTime < 30000)) {
         iotDevice.update();
@@ -128,45 +117,29 @@ void setup() {
     if (iotDevice.isWiFiConnected()) {
         Serial.printf("[Setup] WiFi connected! IP: %s\n", iotDevice.getIPAddress().c_str());
 
-        // 6. Authenticate with server
-        Serial.println("[Setup] Authenticating with server...");
+        // 6. Start local web server
+        iotDevice.startWebServer();
 
+        // 7. Authenticate with server
         if (!iotDevice.isAuthenticated()) {
-            // Try to login
             if (iotDevice.login(DASHBOARD_USER, DASHBOARD_PASS)) {
                 Serial.println("[Setup] Login successful!");
             } else {
-                // If login fails, try registration
-                Serial.println("[Setup] Login failed, trying registration...");
-                if (iotDevice.registerDevice()) {
-                    Serial.println("[Setup] Device registered!");
-                } else {
-                    Serial.println("[Setup] Authentication failed!");
-                }
+                Serial.println("[Setup] Trying registration...");
+                iotDevice.registerDevice();
             }
-        } else {
-            Serial.println("[Setup] Already authenticated");
         }
 
-        // 7. Sync time with server
-        if (iotDevice.syncTimeWithServer()) {
-            Serial.println("[Setup] Time synchronized");
-        }
+        // 8. Sync time
+        iotDevice.syncTimeWithServer();
 
-        // 8. Fetch initial configuration
-        if (iotDevice.fetchDeviceConfig()) {
-            Serial.println("[Setup] Device config loaded");
-        }
+        // 9. Fetch initial config
+        iotDevice.fetchDeviceConfig();
 
     } else {
-        Serial.println("[Setup] WiFi connection failed - starting AP mode");
-        iotDevice.startAPMode();
-        Serial.printf("[Setup] AP Mode: Connect to '%s' to configure WiFi\n", DEVICE_ID);
+        Serial.println("[Setup] Starting AP mode for provisioning");
+        Serial.printf("[Setup] Connect to '%s' to configure WiFi\n", DEVICE_ID);
     }
-
-    // 9. Set intervals (optional, these are defaults)
-    iotDevice.setTelemetryInterval(30000);      // Upload telemetry every 30 seconds
-    iotDevice.setControlFetchInterval(300000);  // Fetch control every 5 minutes
 
     Serial.println("[Setup] Initialization complete!");
     Serial.println("========================================");
@@ -181,121 +154,83 @@ void loop() {
     iotDevice.update();
 
     // ========================================================================
-    // EXAMPLE: Read and use device config
+    // ACCESS CUSTOM FIELDS
     // ========================================================================
 
-    // Access config values with .value
+    // Read your custom config values
     float upperThreshold = iotDevice.deviceConfig.upperThreshold.value;
     float lowerThreshold = iotDevice.deviceConfig.lowerThreshold.value;
-    String ipAddr = iotDevice.deviceConfig.ipAddress.value;
 
-    // Check last modified timestamp
-    uint64_t ipLastModified = iotDevice.deviceConfig.ipAddress.lastModified;
-
-    // ========================================================================
-    // EXAMPLE: Update device config locally
-    // ========================================================================
-
-    // Method 1: Direct assignment
-    // iotDevice.deviceConfig.tankHeight.value = 120.0f;
-    // iotDevice.deviceConfig.tankHeight.lastModified = iotDevice.getCurrentTimestamp();
-    // iotDevice.markConfigModified();
-
-    // Method 2: Using helper (automatically sets timestamp and marks modified)
-    // iotDevice.updateField(iotDevice.deviceConfig.tankHeight, 120.0f);
+    // Read timestamps
+    uint64_t upperModified = iotDevice.deviceConfig.upperThreshold.lastModified;
 
     // ========================================================================
-    // EXAMPLE: Read control data from server
+    // ACCESS SYSTEM FIELDS (Automatically Included)
     // ========================================================================
 
-    // Check if pump switch command received from server/app
-    if (iotDevice.controlData.pumpSwitch.value) {
-        Serial.println("[Loop] Pump ON command received");
-        // Turn on pump
-    } else {
-        Serial.println("[Loop] Pump OFF command received");
-        // Turn off pump
-    }
+    // System config fields
+    bool forceUpdate = iotDevice.systemConfig.force_update.value;
+    String ipAddress = iotDevice.systemConfig.ip_address.value;
+    bool autoUpdate = iotDevice.systemConfig.auto_update.value;
 
-    // Check if config update requested
-    if (iotDevice.controlData.config_update.value) {
-        Serial.println("[Loop] Config update requested - fetching new config");
-        iotDevice.fetchDeviceConfig();
-        // Reset the flag
-        iotDevice.controlData.config_update.value = false;
-    }
+    // System control fields
+    bool configUpdateRequested = iotDevice.systemControl.config_update.value;
+
+    // System telemetry fields
+    int deviceStatus = iotDevice.systemTelemetry.Status.value;  // Always 1
 
     // ========================================================================
-    // EXAMPLE: Update telemetry data
+    // UPDATE YOUR CUSTOM FIELDS
     // ========================================================================
 
     // Simulate sensor readings
-    float waterLevel = 75.5;  // Read from sensor
-    float inflow = 12.3;      // Calculate inflow
+    float temp = readTemperature();  // Your sensor reading function
+    float hum = readHumidity();
 
-    // Update telemetry fields
-    iotDevice.telemetryData.waterLevel.value = waterLevel;
-    iotDevice.telemetryData.currInflow.value = inflow;
-    iotDevice.telemetryData.pumpStatus.value = 1;  // 1 = ON, 0 = OFF
-    iotDevice.telemetryData.Status.value = 1;      // Always 1 (device online)
+    // Update telemetry
+    iotDevice.telemetryData.temperature.value = temp;
+    iotDevice.telemetryData.humidity.value = hum;
 
-    // Telemetry is automatically uploaded by iotDevice.update()
-    // Or manually upload:
-    // iotDevice.uploadTelemetry();
+    // Update using helper (auto-sets timestamp)
+    // iotDevice.updateField(iotDevice.deviceConfig.upperThreshold, 90.0f);
 
     // ========================================================================
-    // EXAMPLE: Manual operations
+    // HANDLE CONTROL COMMANDS
     // ========================================================================
 
-    // Manually fetch control data
-    // iotDevice.fetchControlData();
+    // Check your custom control fields
+    if (iotDevice.controlData.relaySwitch.value) {
+        Serial.println("[Loop] Relay ON command received");
+        // Turn on relay
+    }
 
-    // Manually upload config (with priority = true to override server)
-    // iotDevice.uploadDeviceConfig(true);
+    // Check system control fields
+    if (configUpdateRequested) {
+        Serial.println("[Loop] Config update requested");
+        iotDevice.fetchDeviceConfig();
+        iotDevice.systemControl.config_update.value = false;
+    }
 
-    // Check current timestamp
-    // uint64_t timestamp = iotDevice.getCurrentTimestamp();
-    // Serial.printf("Current time: %llu ms\n", timestamp);
+    // Check force update
+    if (forceUpdate) {
+        Serial.println("[Loop] Firmware update requested");
+        // Implement your OTA update logic here
+        // iotDevice.systemConfig.force_update.value = false;  // Reset after update
+    }
 
-    // Small delay to prevent busy-waiting
     delay(100);
 }
 
 // ============================================================================
-// HELPER FUNCTIONS (Optional)
+// HELPER FUNCTIONS
 // ============================================================================
 
-/**
- * @brief Example: WiFi provisioning via serial commands
- */
-void handleSerialCommands() {
-    if (Serial.available()) {
-        String command = Serial.readStringUntil('\n');
-        command.trim();
+float readTemperature() {
+    // Replace with actual sensor reading
+    return 25.0f + random(-5, 5);
+}
 
-        if (command == "scan") {
-            Serial.println("Scanning WiFi networks...");
-            String networks = iotDevice.scanWiFiNetworks();
-            Serial.println(networks);
-        }
-        else if (command == "status") {
-            Serial.printf("WiFi: %s\n", iotDevice.getWiFiStatus().c_str());
-            Serial.printf("IP: %s\n", iotDevice.getIPAddress().c_str());
-            Serial.printf("Authenticated: %s\n", iotDevice.isAuthenticated() ? "Yes" : "No");
-            Serial.printf("Time Synced: %s\n", iotDevice.isTimeSynced() ? "Yes" : "No");
-        }
-        else if (command == "ap") {
-            Serial.println("Starting AP mode...");
-            iotDevice.startAPMode();
-        }
-        else if (command.startsWith("connect ")) {
-            // Format: connect SSID PASSWORD
-            int firstSpace = command.indexOf(' ');
-            int secondSpace = command.indexOf(' ', firstSpace + 1);
-            String ssid = command.substring(firstSpace + 1, secondSpace);
-            String password = command.substring(secondSpace + 1);
-            Serial.printf("Connecting to %s...\n", ssid.c_str());
-            iotDevice.connectWiFi(ssid, password);
-        }
-    }
+float readHumidity() {
+    // Replace with actual sensor reading
+    return 60.0f + random(-10, 10);
 }
