@@ -1,0 +1,124 @@
+#######################################
+# Syntax Coloring Map For ArduinoIoTDevice
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+IoTDevice	KEYWORD1
+IoTField	KEYWORD1
+IoTStorage	KEYWORD1
+IoTWiFiManager	KEYWORD1
+IoTSyncManager	KEYWORD1
+IoTAPIClient	KEYWORD1
+IoTWiFiMode	KEYWORD1
+IoTWiFiStatus	KEYWORD1
+IoTSyncStatus	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+update	KEYWORD2
+configureServer	KEYWORD2
+setDeviceId	KEYWORD2
+setAPPassword	KEYWORD2
+connectWiFi	KEYWORD2
+startAPMode	KEYWORD2
+isWiFiConnected	KEYWORD2
+getWiFiStatus	KEYWORD2
+getIPAddress	KEYWORD2
+scanWiFiNetworks	KEYWORD2
+getMACAddress	KEYWORD2
+login	KEYWORD2
+registerDevice	KEYWORD2
+isAuthenticated	KEYWORD2
+syncTimeWithServer	KEYWORD2
+getCurrentTimestamp	KEYWORD2
+isTimeSynced	KEYWORD2
+fetchDeviceConfig	KEYWORD2
+uploadDeviceConfig	KEYWORD2
+markConfigModified	KEYWORD2
+fetchControlData	KEYWORD2
+uploadControlData	KEYWORD2
+uploadTelemetry	KEYWORD2
+setTelemetryInterval	KEYWORD2
+setControlFetchInterval	KEYWORD2
+updateField	KEYWORD2
+getWiFiManager	KEYWORD2
+getAPIClient	KEYWORD2
+getSyncManager	KEYWORD2
+getStorage	KEYWORD2
+setServerURL	KEYWORD2
+setDeviceInfo	KEYWORD2
+setHardwareId	KEYWORD2
+syncTime	KEYWORD2
+httpGET	KEYWORD2
+httpPOST	KEYWORD2
+httpPUT	KEYWORD2
+httpPATCH	KEYWORD2
+setRetryCount	KEYWORD2
+setRetryDelay	KEYWORD2
+setTimeout	KEYWORD2
+setServerOnline	KEYWORD2
+setServerOffline	KEYWORD2
+isServerOnline	KEYWORD2
+markDeviceConfigModified	KEYWORD2
+clearDevicePriority	KEYWORD2
+hasDevicePriority	KEYWORD2
+save	KEYWORD2
+load	KEYWORD2
+saveWiFiCredentials	KEYWORD2
+loadWiFiCredentials	KEYWORD2
+clearWiFiCredentials	KEYWORD2
+hasWiFiCredentials	KEYWORD2
+saveDashboardCredentials	KEYWORD2
+loadDashboardCredentials	KEYWORD2
+saveDeviceToken	KEYWORD2
+loadDeviceToken	KEYWORD2
+clearDeviceToken	KEYWORD2
+hasDeviceToken	KEYWORD2
+saveHardwareId	KEYWORD2
+loadHardwareId	KEYWORD2
+saveSyncStatus	KEYWORD2
+loadSyncStatus	KEYWORD2
+saveString	KEYWORD2
+loadString	KEYWORD2
+saveBool	KEYWORD2
+loadBool	KEYWORD2
+saveUInt64	KEYWORD2
+loadUInt64	KEYWORD2
+saveUInt32	KEYWORD2
+loadUInt32	KEYWORD2
+toJson	KEYWORD2
+fromJson	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+deviceConfig	KEYWORD2
+controlData	KEYWORD2
+telemetryData	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+IOT_WIFI_CLIENT_MODE	LITERAL1
+IOT_WIFI_AP_MODE	LITERAL1
+IOT_WIFI_DISABLED	LITERAL1
+IOT_WIFI_IDLE	LITERAL1
+IOT_WIFI_CONNECTING	LITERAL1
+IOT_WIFI_CONNECTED	LITERAL1
+IOT_WIFI_DISCONNECTED	LITERAL1
+IOT_WIFI_FAILED	LITERAL1
+
+#######################################
+# Macros (KEYWORD3)
+#######################################
+
+IOT_FIELD	KEYWORD3
+IOT_FIELD_SIMPLE	KEYWORD3
