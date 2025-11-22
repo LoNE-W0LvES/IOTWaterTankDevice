@@ -229,6 +229,46 @@ public:
         return webServerEnabled;
     }
 
+    /**
+     * @brief Set custom telemetry serialization callback
+     * Override the default telemetry callback to include your custom fields
+     */
+    void setTelemetryCallback(std::function<String()> callback) {
+        customTelemetryCallback = callback;
+    }
+
+    /**
+     * @brief Set custom control GET callback
+     * Override the default control callback to include your custom fields
+     */
+    void setControlGetCallback(std::function<String()> callback) {
+        customControlGetCallback = callback;
+    }
+
+    /**
+     * @brief Set custom control SET callback
+     * Override the default control callback to handle your custom fields
+     */
+    void setControlSetCallback(std::function<bool(const String&)> callback) {
+        customControlSetCallback = callback;
+    }
+
+    /**
+     * @brief Set custom config GET callback
+     * Override the default config callback to include your custom fields
+     */
+    void setConfigGetCallback(std::function<String()> callback) {
+        customConfigGetCallback = callback;
+    }
+
+    /**
+     * @brief Set custom config SET callback
+     * Override the default config callback to handle your custom fields
+     */
+    void setConfigSetCallback(std::function<bool(const String&)> callback) {
+        customConfigSetCallback = callback;
+    }
+
     // ========================================================================
     // MAIN LOOP
     // ========================================================================
@@ -471,6 +511,13 @@ private:
     unsigned long lastTelemetryTime;
     unsigned long lastControlFetchTime;
 
+    // Custom serialization callbacks
+    std::function<String()> customTelemetryCallback;
+    std::function<String()> customControlGetCallback;
+    std::function<bool(const String&)> customControlSetCallback;
+    std::function<String()> customConfigGetCallback;
+    std::function<bool(const String&)> customConfigSetCallback;
+
     /**
      * @brief Setup web server callbacks
      */
@@ -496,8 +543,13 @@ private:
 
         // Telemetry callback (Client mode)
         webServer.onGetTelemetry([this]() -> String {
-            DynamicJsonDocument doc(2048);
-            // User should override this to include their telemetry data
+            // Use custom callback if provided, otherwise default to system fields only
+            if (customTelemetryCallback) {
+                return customTelemetryCallback();
+            }
+
+            // Default: system fields only (users should provide custom callback)
+            DynamicJsonDocument doc(512);
             doc["timestamp"] = getCurrentTimestamp();
             doc["Status"] = systemTelemetry.Status.value;
 
@@ -508,8 +560,13 @@ private:
 
         // Control callbacks (Client mode)
         webServer.onGetControl([this]() -> String {
-            DynamicJsonDocument doc(2048);
-            // User should override this to include their control data with timestamps
+            // Use custom callback if provided
+            if (customControlGetCallback) {
+                return customControlGetCallback();
+            }
+
+            // Default: system fields only
+            DynamicJsonDocument doc(512);
             doc["config_update"] = systemControl.config_update.value;
             doc["config_update_lastModified"] = systemControl.config_update.lastModified;
 
@@ -519,22 +576,39 @@ private:
         });
 
         webServer.onSetControl([this](const String& body) -> bool {
-            DynamicJsonDocument doc(2048);
+            // Use custom callback if provided
+            if (customControlSetCallback) {
+                return customControlSetCallback(body);
+            }
+
+            // Default: parse and update system control fields only
+            DynamicJsonDocument doc(512);
             DeserializationError error = deserializeJson(doc, body);
 
             if (error) {
                 return false;
             }
 
-            // Handle control commands
-            // User should override this to handle their control data
+            // Update system control fields if present
+            if (doc.containsKey("config_update")) {
+                systemControl.config_update.value = doc["config_update"].as<bool>();
+                if (doc.containsKey("config_update_lastModified")) {
+                    systemControl.config_update.lastModified = doc["config_update_lastModified"].as<uint64_t>();
+                }
+            }
+
             return true;
         });
 
         // Config callbacks (Client mode)
         webServer.onGetConfig([this]() -> String {
-            DynamicJsonDocument doc(2048);
-            // User should override this to include their config data
+            // Use custom callback if provided
+            if (customConfigGetCallback) {
+                return customConfigGetCallback();
+            }
+
+            // Default: system fields only
+            DynamicJsonDocument doc(1024);
             doc["force_update"] = systemConfig.force_update.value;
             doc["force_update_lastModified"] = systemConfig.force_update.lastModified;
             doc["ip_address"] = systemConfig.ip_address.value;
@@ -548,15 +622,39 @@ private:
         });
 
         webServer.onSetConfig([this](const String& body) -> bool {
-            DynamicJsonDocument doc(2048);
+            // Use custom callback if provided
+            if (customConfigSetCallback) {
+                return customConfigSetCallback(body);
+            }
+
+            // Default: parse and update system config fields only
+            DynamicJsonDocument doc(1024);
             DeserializationError error = deserializeJson(doc, body);
 
             if (error) {
                 return false;
             }
 
-            // Handle config updates
-            // User should override this to handle their config data
+            // Update system config fields if present
+            if (doc.containsKey("force_update")) {
+                systemConfig.force_update.value = doc["force_update"].as<bool>();
+                if (doc.containsKey("force_update_lastModified")) {
+                    systemConfig.force_update.lastModified = doc["force_update_lastModified"].as<uint64_t>();
+                }
+            }
+            if (doc.containsKey("ip_address")) {
+                systemConfig.ip_address.value = doc["ip_address"].as<String>();
+                if (doc.containsKey("ip_address_lastModified")) {
+                    systemConfig.ip_address.lastModified = doc["ip_address_lastModified"].as<uint64_t>();
+                }
+            }
+            if (doc.containsKey("auto_update")) {
+                systemConfig.auto_update.value = doc["auto_update"].as<bool>();
+                if (doc.containsKey("auto_update_lastModified")) {
+                    systemConfig.auto_update.lastModified = doc["auto_update_lastModified"].as<uint64_t>();
+                }
+            }
+
             return true;
         });
 

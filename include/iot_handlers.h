@@ -55,4 +55,17 @@ void handleButtons();
  */
 void handleSystemCommands();
 
+/**
+ * @brief Setup webserver callbacks for custom data serialization
+ * Registers callbacks to serialize/deserialize water tank specific data
+ */
+void setupWebServerCallbacks();
+
+// Serialization callbacks for webserver
+String serializeTelemetry();
+String serializeControl();
+bool deserializeControl(const String& body);
+String serializeConfig();
+bool deserializeConfig(const String& body);
+
 #endif // IOT_HANDLERS_H

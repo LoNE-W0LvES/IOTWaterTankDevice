@@ -81,6 +81,9 @@ void setup() {
     iotDevice.setDeviceId(DEVICE_ID);
     iotDevice.setAPPassword(AP_PASSWORD);
 
+    // Setup webserver callbacks for custom data serialization
+    setupWebServerCallbacks();
+
     // Try to connect to WiFi
     DEBUG_PRINTLN("[Setup] Connecting to WiFi...");
     if (!iotDevice.connectWiFi()) {
