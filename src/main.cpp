@@ -107,6 +107,9 @@ void setup() {
         // Update IP address in system config
         iotDevice.systemConfig.ip_address.value = iotDevice.getIPAddress();
 
+        // Update display with network info
+        displayManager.setNetworkInfo(iotDevice.getIPAddress(), iotDevice.getWiFiManager().getSSID());
+
         // Start web server (automatically selects CLIENT mode)
         iotDevice.startWebServer();
 
@@ -121,6 +124,15 @@ void setup() {
 
                 // Fetch initial configuration
                 iotDevice.fetchDeviceConfig();
+
+                // Update display with tank settings
+                displayManager.setTankSettings(
+                    iotDevice.deviceConfig.tankHeight.value,
+                    iotDevice.deviceConfig.tankWidth.value,
+                    iotDevice.deviceConfig.tankShape.value,
+                    iotDevice.deviceConfig.upperThreshold.value,
+                    iotDevice.deviceConfig.lowerThreshold.value
+                );
 
                 systemInitialized = true;
             } else {

@@ -213,6 +213,16 @@ void handleSystemCommands() {
     if (iotDevice.systemControl.config_update.value) {
         DEBUG_PRINTLN("[System] Config update requested");
         iotDevice.fetchDeviceConfig();
+
+        // Update display with new tank settings
+        displayManager.setTankSettings(
+            iotDevice.deviceConfig.tankHeight.value,
+            iotDevice.deviceConfig.tankWidth.value,
+            iotDevice.deviceConfig.tankShape.value,
+            iotDevice.deviceConfig.upperThreshold.value,
+            iotDevice.deviceConfig.lowerThreshold.value
+        );
+
         iotDevice.systemControl.config_update.value = false;
     }
 
