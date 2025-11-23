@@ -268,8 +268,8 @@ String IoTWiFiManager::scanNetworks() {
     for (int i = 0; i < n; i++) {
         JsonObject network = networks.createNestedObject();
         network["ssid"] = WiFi.SSID(i);
-        network["signal"] = WiFi.RSSI(i);
-        network["auth"] = (WiFi.encryptionType(i) == WIFI_AUTH_OPEN) ? "Open" : "Secured";
+        network["rssi"] = WiFi.RSSI(i);
+        network["encryption"] = (int)WiFi.encryptionType(i);
     }
 
     String result;
