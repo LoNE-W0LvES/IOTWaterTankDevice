@@ -41,6 +41,21 @@ void IoTWebServer::begin(WebServerMode mode) {
     currentMode = mode;
     server = new AsyncWebServer(port);
 
+    // Add root handler for diagnostics (works in both modes)
+    server->on("/", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        Serial.println("[WebServer] GET / (root)");
+        String html = "<html><body><h1>IoT Device Web Server</h1>";
+        html += "<p>Mode: " + String(currentMode == WS_MODE_PROVISIONING ? "PROVISIONING" : "CLIENT") + "</p>";
+        html += "<p>Device ID: " + deviceId + "</p>";
+        html += "<p>Status: Running</p>";
+        html += "<p>Try: <a href=\"/" + deviceId + "/status\">/" + deviceId + "/status</a></p>";
+        html += "</body></html>";
+
+        AsyncWebServerResponse* resp = request->beginResponse(200, "text/html", html);
+        addCORSHeaders(resp);
+        request->send(resp);
+    });
+
     if (currentMode == WS_MODE_PROVISIONING) {
         setupProvisioningRoutes();
     } else {
@@ -115,14 +130,22 @@ void IoTWebServer::onSetTimestamp(SetTimestampCallback callback) {
 // ============================================================================
 
 void IoTWebServer::setupProvisioningRoutes() {
+    Serial.printf("[WebServer] Setting up provisioning routes, deviceId='%s' (length=%d)\n",
+                  deviceId.c_str(), deviceId.length());
+
     if (deviceId.length() == 0) {
-        Serial.println("[WebServer] Warning: Device ID not set for provisioning");
+        Serial.println("[WebServer] ERROR: Device ID not set for provisioning - routes NOT created!");
         return;
     }
 
     String statusEndpoint = "/" + deviceId + "/status";
     String scanEndpoint = "/" + deviceId + "/scanWifi";
     String saveEndpoint = "/" + deviceId + "/save";
+
+    Serial.printf("[WebServer] Registering provisioning endpoints:\n");
+    Serial.printf("  - %s\n", statusEndpoint.c_str());
+    Serial.printf("  - %s\n", scanEndpoint.c_str());
+    Serial.printf("  - %s\n", saveEndpoint.c_str());
 
     // OPTIONS handlers
     server->on(statusEndpoint.c_str(), HTTP_OPTIONS, [this](AsyncWebServerRequest* request) {
