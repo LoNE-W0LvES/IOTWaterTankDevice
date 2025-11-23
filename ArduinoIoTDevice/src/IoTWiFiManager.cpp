@@ -61,6 +61,35 @@ bool IoTWiFiManager::startClient(const String& ssid, const String& password) {
 }
 
 bool IoTWiFiManager::updateConnection() {
+    // If in AP mode, check if we should transition to CLIENT mode
+    // This happens when WiFi connects successfully in AP+STA mode (after provisioning)
+    if (currentMode == IOT_WIFI_AP_MODE) {
+        wl_status_t wifiStatus = WiFi.status();
+
+        // Check if WiFi connected as client in AP+STA mode
+        if (wifiStatus == WL_CONNECTED && WiFi.localIP().toString() != "0.0.0.0") {
+            // WiFi connected! Transition from AP mode to CLIENT mode
+            Serial.printf("[WiFi] Connected in AP+STA mode! IP: %s\n", WiFi.localIP().toString().c_str());
+            Serial.println("[WiFi] Transitioning from AP mode to CLIENT mode");
+
+            // Update mode and status
+            currentMode = IOT_WIFI_CLIENT_MODE;
+            currentStatus = IOT_WIFI_CONNECTED;
+            connectionAttempts = 0;
+
+            // Stop AP - we don't need it anymore
+            WiFi.softAPdisconnect(true);
+            WiFi.mode(WIFI_STA);  // Switch to pure CLIENT mode
+
+            Serial.println("[WiFi] AP stopped, now in pure CLIENT mode");
+            return true;  // Signal that we just connected
+        }
+
+        // Still in AP mode, no client connection yet
+        return false;
+    }
+
+    // CLIENT mode - normal connection management
     if (currentMode != IOT_WIFI_CLIENT_MODE) {
         return false;
     }
@@ -160,8 +189,7 @@ void IoTWiFiManager::stopAP() {
 // ============================================================================
 
 bool IoTWiFiManager::isConnected() {
-    // Only return true if connected as CLIENT (not in AP mode)
-    return currentMode == IOT_WIFI_CLIENT_MODE && currentStatus == IOT_WIFI_CONNECTED;
+    return currentStatus == IOT_WIFI_CONNECTED;
 }
 
 IoTWiFiMode IoTWiFiManager::getMode() {
