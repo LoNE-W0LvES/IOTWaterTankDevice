@@ -282,12 +282,14 @@ public:
         bool isConnected = wifiManager.updateConnection();
 
         // If just connected, update IP address and restart webserver in client mode
+        // BUT: Don't restart webserver if we're in AP mode (user may be provisioning)
         if (!wasConnected && isConnected) {
             systemConfig.ip_address.value = wifiManager.getIPAddress();
             systemConfig.ip_address.lastModified = getCurrentTimestamp();
 
-            // Restart webserver in client mode if it was running in provisioning mode
-            if (webServerEnabled) {
+            // Only restart webserver if NOT in AP mode
+            // If in AP mode, keep the provisioning endpoints active
+            if (webServerEnabled && wifiManager.getMode() != IOT_WIFI_AP_MODE) {
                 webServer.stop();
                 webServerEnabled = false;
                 delay(100);

@@ -160,7 +160,8 @@ void IoTWiFiManager::stopAP() {
 // ============================================================================
 
 bool IoTWiFiManager::isConnected() {
-    return currentStatus == IOT_WIFI_CONNECTED;
+    // Only return true if connected as CLIENT (not in AP mode)
+    return currentMode == IOT_WIFI_CLIENT_MODE && currentStatus == IOT_WIFI_CONNECTED;
 }
 
 IoTWiFiMode IoTWiFiManager::getMode() {
