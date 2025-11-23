@@ -48,7 +48,7 @@ void IoTWebServer::begin(WebServerMode mode) {
         html += "<p>Mode: " + String(currentMode == WS_MODE_PROVISIONING ? "PROVISIONING" : "CLIENT") + "</p>";
         html += "<p>Device ID: " + deviceId + "</p>";
         html += "<p>Status: Running</p>";
-        html += "<p>Try: <a href=\"/" + deviceId + "/status\">/" + deviceId + "/status</a></p>";
+        html += "<p>All endpoints available regardless of mode</p>";
         html += "</body></html>";
 
         AsyncWebServerResponse* resp = request->beginResponse(200, "text/html", html);
@@ -56,11 +56,9 @@ void IoTWebServer::begin(WebServerMode mode) {
         request->send(resp);
     });
 
-    if (currentMode == WS_MODE_PROVISIONING) {
-        setupProvisioningRoutes();
-    } else {
-        setupClientRoutes();
-    }
+    // Setup ALL endpoints regardless of mode
+    setupProvisioningRoutes();
+    setupClientRoutes();
 
     server->begin();
     running = true;
