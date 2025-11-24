@@ -195,9 +195,10 @@ public:
     /**
      * @brief Set device ID for WiFi AP mode and web server
      */
-    void setDeviceId(const String& deviceId) {
-        wifiManager.setDeviceId(deviceId);
-        webServer.setDeviceId(deviceId);
+    void setDeviceId(const String& id) {
+        this->deviceId = id;
+        wifiManager.setDeviceId(id);
+        webServer.setDeviceId(id);
     }
 
     /**
@@ -555,8 +556,11 @@ public:
     bool fetchDeviceConfig() {
         Serial.println("[IoTDevice] Fetching device config...");
 
+        // Construct endpoint with deviceId query parameter
+        String endpoint = "/api/device/config?deviceId=" + deviceId;
+
         String response;
-        int statusCode = apiClient.httpGET("/api/device/config", response);
+        int statusCode = apiClient.httpGET(endpoint, response);
 
         if (statusCode == 200) {
             // Parse and apply config
@@ -586,8 +590,11 @@ public:
     bool fetchControlData() {
         Serial.println("[IoTDevice] Fetching control data...");
 
+        // Construct endpoint with deviceId query parameter
+        String endpoint = "/api/device/control?deviceId=" + deviceId;
+
         String response;
-        int statusCode = apiClient.httpGET("/api/device/control", response);
+        int statusCode = apiClient.httpGET(endpoint, response);
 
         if (statusCode == 200) {
             Serial.println("[IoTDevice] Control data fetched");
@@ -651,6 +658,7 @@ private:
 
     bool webServerEnabled;
     bool autoSync;
+    String deviceId;  // Full device ID (e.g., "wt001-DEV-02-690e6a9d092433c0acfb9178")
     unsigned long telemetryInterval;
     unsigned long controlFetchInterval;
     unsigned long lastTelemetryTime;
