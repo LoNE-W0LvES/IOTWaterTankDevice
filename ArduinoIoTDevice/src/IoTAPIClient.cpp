@@ -69,6 +69,9 @@ bool IoTAPIClient::login(const String& username, const String& password) {
     String payload;
     serializeJson(doc, payload);
 
+    // Debug: Print login payload
+    Serial.printf("[API] Login payload: %s\n", payload.c_str());
+
     String response;
     int statusCode = httpRequest("POST", "/api/device-auth/login", payload, response, false);
 
@@ -84,7 +87,18 @@ bool IoTAPIClient::login(const String& username, const String& password) {
         }
     }
 
+    // Parse and log error response
     Serial.printf("[API] Login failed (HTTP %d)\n", statusCode);
+    if (response.length() > 0) {
+        Serial.printf("[API] Response: %s\n", response.c_str());
+
+        // Try to parse error message
+        DynamicJsonDocument errorDoc(512);
+        DeserializationError error = deserializeJson(errorDoc, response);
+        if (!error && errorDoc.containsKey("error")) {
+            Serial.printf("[API] Error: %s\n", errorDoc["error"].as<const char*>());
+        }
+    }
     return false;
 }
 
