@@ -132,7 +132,11 @@ public:
           telemetryInterval(30000),
           controlFetchInterval(300000),
           lastTelemetryTime(0),
-          lastControlFetchTime(0) {
+          lastControlFetchTime(0),
+          isConnectedToServer(false),
+          consecutiveHeartbeatFailures(0),
+          lastHeartbeatCheck(0),
+          heartbeatInterval(HEARTBEAT_CHECK_INTERVAL) {
     }
 
     // ========================================================================
@@ -299,8 +303,54 @@ public:
         // Update time tracking
         syncManager.update();
 
-        // Auto-sync if enabled and connected
-        if (autoSync && isConnected) {
+        // Check server connectivity with heartbeat (non-blocking)
+        if (isConnected && isAuthenticated()) {
+            unsigned long now = millis();
+
+            // Determine heartbeat interval based on server status
+            unsigned long checkInterval = isConnectedToServer ? HEARTBEAT_CHECK_INTERVAL : HEARTBEAT_RETRY_INTERVAL;
+
+            // Time to check heartbeat?
+            if (now - lastHeartbeatCheck >= checkInterval) {
+                lastHeartbeatCheck = now;
+
+                // Check server heartbeat
+                bool heartbeatOK = apiClient.checkHeartbeat();
+
+                if (heartbeatOK) {
+                    // Heartbeat success
+                    if (!isConnectedToServer) {
+                        // Server just came back online
+                        Serial.println("[IoTDevice] Server is now ONLINE - resuming server tasks");
+                        isConnectedToServer = true;
+
+                        // Execute queued tasks sequentially
+                        Serial.println("[IoTDevice] Syncing queued data with server...");
+                        uploadTelemetry();
+                        fetchControlData();
+                        fetchDeviceConfig();
+                    }
+                    // Reset failure counter
+                    consecutiveHeartbeatFailures = 0;
+                    isConnectedToServer = true;
+
+                } else {
+                    // Heartbeat failed
+                    consecutiveHeartbeatFailures++;
+                    Serial.printf("[IoTDevice] Heartbeat failure %d/%d\n",
+                                consecutiveHeartbeatFailures, MAX_HEARTBEAT_FAILURES);
+
+                    // Check if we've exceeded max failures
+                    if (consecutiveHeartbeatFailures >= MAX_HEARTBEAT_FAILURES && isConnectedToServer) {
+                        Serial.println("[IoTDevice] Server is now OFFLINE - pausing server tasks");
+                        isConnectedToServer = false;
+                    }
+                }
+            }
+        }
+
+        // Auto-sync if enabled, WiFi connected, and server is online
+        if (autoSync && isConnected && isConnectedToServer) {
             unsigned long now = millis();
 
             // Upload telemetry
@@ -384,12 +434,30 @@ public:
         bool success = apiClient.login(username, password);
         if (success) {
             syncTimeWithServer();
+
+            // After NTP sync, check server heartbeat
+            Serial.println("[IoTDevice] Checking server connectivity...");
+            bool heartbeatOK = apiClient.checkHeartbeat();
+            if (heartbeatOK) {
+                isConnectedToServer = true;
+                consecutiveHeartbeatFailures = 0;
+                Serial.println("[IoTDevice] Server is ONLINE - starting server tasks");
+            } else {
+                isConnectedToServer = false;
+                consecutiveHeartbeatFailures = 1;
+                Serial.println("[IoTDevice] Server heartbeat failed - will retry periodically");
+            }
+            lastHeartbeatCheck = millis();
         }
         return success;
     }
 
     bool isAuthenticated() {
         return apiClient.isAuthenticated();
+    }
+
+    bool isServerOnline() {
+        return isConnectedToServer;
     }
 
     // ========================================================================
@@ -515,6 +583,15 @@ private:
     unsigned long controlFetchInterval;
     unsigned long lastTelemetryTime;
     unsigned long lastControlFetchTime;
+
+    // Server connectivity tracking
+    bool isConnectedToServer;
+    int consecutiveHeartbeatFailures;
+    unsigned long lastHeartbeatCheck;
+    unsigned long heartbeatInterval;
+    const int MAX_HEARTBEAT_FAILURES = 10;
+    const unsigned long HEARTBEAT_CHECK_INTERVAL = 30000;  // 30 seconds
+    const unsigned long HEARTBEAT_RETRY_INTERVAL = 60000;   // 1 minute when disconnected
 
     // Custom serialization callbacks
     std::function<String()> customTelemetryCallback;

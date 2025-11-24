@@ -70,6 +70,16 @@ public:
     bool syncTime();
 
     // ========================================================================
+    // SERVER CONNECTIVITY
+    // ========================================================================
+
+    /**
+     * @brief Check server heartbeat/health
+     * @return true if server is reachable and responding
+     */
+    bool checkHeartbeat();
+
+    // ========================================================================
     // GENERIC HTTP OPERATIONS
     // ========================================================================
 

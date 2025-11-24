@@ -122,6 +122,25 @@ bool IoTAPIClient::syncTime() {
 }
 
 // ============================================================================
+// SERVER CONNECTIVITY
+// ============================================================================
+
+bool IoTAPIClient::checkHeartbeat() {
+    Serial.println("[API] Checking server heartbeat...");
+
+    String response;
+    int statusCode = httpGET("/api/device/heartbeat", response);
+
+    if (statusCode == 200) {
+        Serial.println("[API] Heartbeat OK - server is online");
+        return true;
+    }
+
+    Serial.printf("[API] Heartbeat failed (HTTP %d)\n", statusCode);
+    return false;
+}
+
+// ============================================================================
 // GENERIC HTTP OPERATIONS
 // ============================================================================
 
