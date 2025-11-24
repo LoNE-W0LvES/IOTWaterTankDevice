@@ -18,7 +18,7 @@
 
 // Comment out to disable verbose HTTP response logging for API client
 // When disabled, still shows request info and status, but hides response bodies
-// #define DEBUG_RESPONSE_API
+#define DEBUG_RESPONSE_API
 
 // Comment out to disable verbose HTTP response logging for webserver
 // When disabled, still shows request info and status, but hides response bodies

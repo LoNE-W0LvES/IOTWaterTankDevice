@@ -5,6 +5,15 @@
 
 #include "IoTAPIClient.h"
 
+// Debug macros - will use user's config if DEBUG_RESPONSE_API is defined
+#ifndef DEBUG_RESPONSE_API_PRINTF
+  #ifdef DEBUG_RESPONSE_API
+    #define DEBUG_RESPONSE_API_PRINTF(format, ...) Serial.printf(format, ##__VA_ARGS__)
+  #else
+    #define DEBUG_RESPONSE_API_PRINTF(format, ...)
+  #endif
+#endif
+
 IoTAPIClient::IoTAPIClient(IoTStorage* storage, IoTSyncManager* syncManager)
     : storage(storage),
       syncManager(syncManager),
@@ -73,8 +82,8 @@ bool IoTAPIClient::login(const String& username, const String& password) {
     String payload;
     serializeJson(doc, payload);
 
-    // Debug: Print login payload
-    Serial.printf("[API] Login payload: %s\n", payload.c_str());
+    // Debug: Print login payload (only if DEBUG_RESPONSE_API is enabled)
+    DEBUG_RESPONSE_API_PRINTF("[API] Login payload: %s\n", payload.c_str());
 
     String response;
     int statusCode = httpRequest("POST", "/api/device-auth/login", payload, response, false);
@@ -94,7 +103,7 @@ bool IoTAPIClient::login(const String& username, const String& password) {
     // Parse and log error response
     Serial.printf("[API] Login failed (HTTP %d)\n", statusCode);
     if (response.length() > 0) {
-        Serial.printf("[API] Response: %s\n", response.c_str());
+        DEBUG_RESPONSE_API_PRINTF("[API] Response: %s\n", response.c_str());
 
         // Try to parse error message
         DynamicJsonDocument errorDoc(512);
