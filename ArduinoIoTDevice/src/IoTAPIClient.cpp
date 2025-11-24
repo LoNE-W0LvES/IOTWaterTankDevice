@@ -139,6 +139,13 @@ bool IoTAPIClient::checkHeartbeat() {
     String response;
     int statusCode = httpPOST("/api/device-auth/heartbeat", payload, response);
 
+    // Handle connection errors (server offline)
+    if (statusCode <= 0) {
+        Serial.println("[API] Heartbeat failed - SERVER IS OFFLINE (connection error)");
+        return false;
+    }
+
+    // Handle success
     if (statusCode == 200) {
         // Parse response to verify success
         DynamicJsonDocument responseDoc(256);
@@ -153,7 +160,46 @@ bool IoTAPIClient::checkHeartbeat() {
         }
     }
 
-    Serial.printf("[API] Heartbeat failed (HTTP %d)\n", statusCode);
+    // Handle HTTP error responses - parse error message
+    DynamicJsonDocument errorDoc(256);
+    DeserializationError error = deserializeJson(errorDoc, response);
+
+    if (!error && errorDoc.containsKey("error")) {
+        String errorMsg = errorDoc["error"].as<String>();
+
+        switch (statusCode) {
+            case 401:
+                Serial.printf("[API] Heartbeat failed (401) - AUTHENTICATION ERROR: %s\n", errorMsg.c_str());
+                if (errorMsg.indexOf("expired") >= 0 || errorMsg.indexOf("Invalid") >= 0) {
+                    Serial.println("[API] Token expired or invalid - need to re-login");
+                    jwtToken = "";  // Clear invalid token
+                    saveToken("");
+                }
+                break;
+
+            case 403:
+                Serial.printf("[API] Heartbeat failed (403) - ACCESS DENIED: %s\n", errorMsg.c_str());
+                Serial.println("[API] Device is not active - contact administrator");
+                break;
+
+            case 404:
+                Serial.printf("[API] Heartbeat failed (404) - NOT FOUND: %s\n", errorMsg.c_str());
+                Serial.println("[API] Device not found in database");
+                break;
+
+            case 500:
+                Serial.printf("[API] Heartbeat failed (500) - SERVER ERROR: %s\n", errorMsg.c_str());
+                Serial.println("[API] Server is having issues");
+                break;
+
+            default:
+                Serial.printf("[API] Heartbeat failed (HTTP %d): %s\n", statusCode, errorMsg.c_str());
+                break;
+        }
+    } else {
+        Serial.printf("[API] Heartbeat failed (HTTP %d) - no error message\n", statusCode);
+    }
+
     return false;
 }
 

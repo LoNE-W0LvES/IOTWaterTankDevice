@@ -157,6 +157,10 @@ public:
         // Initialize system telemetry
         systemTelemetry.Status.value = 1;  // Always online when running
 
+        // Set API client retry settings for faster failure detection
+        apiClient.setRetryCount(1);  // Only 1 retry for faster offline detection
+        apiClient.setTimeout(5000);   // 5 second timeout
+
         Serial.println("[IoTDevice] Ready");
     }
 
