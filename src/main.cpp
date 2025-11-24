@@ -19,6 +19,7 @@
 
 #include <Arduino.h>
 #include <ArduinoIoTDevice.h>
+#include <nvs_flash.h>
 #include "config.h"
 #include "iot_data_structures.h"
 #include "iot_handlers.h"
@@ -63,6 +64,17 @@ void setup() {
     Serial.println("  ESP32-S3 Water Tank Monitor");
     Serial.println("  Using ArduinoIoTDevice Library v1.0");
     Serial.println("========================================");
+
+    // Initialize NVS flash for persistent storage
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        // NVS partition was truncated or needs to be erased
+        Serial.println("[NVS] Erasing flash and reinitializing...");
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(err);
+    Serial.println("[NVS] Flash initialized successfully");
 
     // Initialize hardware
     pinMode(RELAY_PIN, OUTPUT);
