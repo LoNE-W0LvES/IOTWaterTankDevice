@@ -351,6 +351,25 @@ public:
                     }
                 }
             }
+        } else if (isConnected && !isAuthenticated()) {
+            // WiFi connected but not authenticated - check if token expired and we need to re-login
+            String username, password;
+            if (storage.loadDashboardCredentials(username, password)) {
+                // We have credentials but no valid token - token may have expired
+                unsigned long now = millis();
+
+                // Try to re-login every 60 seconds
+                if (now - lastHeartbeatCheck >= 60000) {
+                    lastHeartbeatCheck = now;
+                    Serial.println("[IoTDevice] Token expired - attempting automatic re-login...");
+
+                    if (login(username, password)) {
+                        Serial.println("[IoTDevice] Automatic re-login successful!");
+                    } else {
+                        Serial.println("[IoTDevice] Automatic re-login failed - will retry in 60s");
+                    }
+                }
+            }
         }
 
         // Auto-sync if enabled, WiFi connected, and server is online
