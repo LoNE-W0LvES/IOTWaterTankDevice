@@ -61,9 +61,13 @@ void IoTAPIClient::setHardwareId(const String& hardwareId) {
 bool IoTAPIClient::login(const String& username, const String& password) {
     Serial.println("[API] Attempting login...");
 
+    // Construct deviceId from projectId-deviceName-mongoDeviceId
+    String deviceId = projectId + "-" + deviceName + "-" + mongoDeviceId;
+
     DynamicJsonDocument doc(512);
     doc["username"] = username;
     doc["password"] = password;
+    doc["deviceId"] = deviceId;
     doc["hardwareId"] = hardwareId;
 
     String payload;
