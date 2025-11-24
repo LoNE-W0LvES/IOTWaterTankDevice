@@ -612,9 +612,6 @@ private:
     int consecutiveHeartbeatFailures;
     unsigned long lastHeartbeatCheck;
     unsigned long heartbeatInterval;
-    const int MAX_HEARTBEAT_FAILURES = 10;
-    const unsigned long HEARTBEAT_CHECK_INTERVAL = 30000;  // 30 seconds
-    const unsigned long HEARTBEAT_RETRY_INTERVAL = 60000;   // 1 minute when disconnected
 
     // Custom serialization callbacks
     std::function<String()> customTelemetryCallback;
