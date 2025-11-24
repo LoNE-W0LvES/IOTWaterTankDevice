@@ -327,6 +327,9 @@ int IoTAPIClient::httpRequest(const String& method, const String& endpoint,
 
             Serial.printf("[API] Request failed (HTTP %d)\n", statusCode);
 
+            // Log response body for debugging (especially for 400 errors)
+            DEBUG_RESPONSE_API_PRINTF("[API] Error response: %s\n", response.c_str());
+
             // Don't retry on client errors (4xx)
             if (statusCode >= 400 && statusCode < 500) {
                 break;
