@@ -18,6 +18,13 @@ IoTAPIClient::IoTAPIClient(IoTStorage* storage, IoTSyncManager* syncManager)
       retryCount(3),
       retryDelay(2000),
       timeout(10000) {
+    // Load saved token from NVS once at initialization
+    if (storage) {
+        jwtToken = storage->loadDeviceToken();
+        if (jwtToken.length() > 0) {
+            Serial.println("[API] Loaded saved auth token from storage");
+        }
+    }
 }
 
 // ============================================================================
@@ -83,10 +90,9 @@ bool IoTAPIClient::login(const String& username, const String& password) {
 
 
 bool IoTAPIClient::isAuthenticated() {
-    if (jwtToken.length() > 0) {
-        return true;
-    }
-    return loadToken();
+    // Just check if we have a token in memory
+    // Token is loaded once at initialization and after login
+    return jwtToken.length() > 0;
 }
 
 String IoTAPIClient::getToken() {

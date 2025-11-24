@@ -2,6 +2,12 @@
 #define CONFIG_H
 
 #include <Arduino.h>
+#include "iot_config.h"  // Include IoT library configuration
+
+// ============================================================================
+// DEVICE-SPECIFIC CONFIGURATION
+// Hardware pins, timing, and device behavior settings
+// ============================================================================
 
 // ============================================================================
 // DEBUG CONFIGURATION
@@ -75,44 +81,10 @@
 #define BTN6_PIN 12  // Hardware override switch
 
 // ============================================================================
-// BACKEND API CONFIGURATION
-// ============================================================================
-
-#define SERVER_URL "http://103.136.236.16"
-#define PROJECT_ID "wt001"
-#define DEVICE_NAME "DEV-02"
-#define MONGODB_DEVICE_ID "690e6a9d092433c0acfb9178"
-#define DEVICE_ID "wt001-DEV-02-690e6a9d092433c0acfb9178"
-#define FIRMWARE_VERSION "1.0.0"
-
-// Device Credentials
-// Note: Device uses dashboard credentials from web portal (user-entered)
-// Credentials are stored in NVS: PREF_DASHBOARD_USER and PREF_DASHBOARD_PASS
-// User enters credentials via WiFi setup portal at http://192.168.4.1
-
-// API Endpoints
-#define API_FIRMWARE_LATEST "/api/firmware/latest"
-
-// ============================================================================
-// WIFI CONFIGURATION
-// ============================================================================
-
-#define AP_SSID "AquaFlow-Setup"
-#define AP_PASSWORD "PassAquaWT001"
-#define WIFI_TIMEOUT_MS 20000           // 20 seconds
-#define WIFI_RETRY_INTERVAL_MS 30000    // 30 seconds between reconnection attempts
-#define WIFI_RECONNECT_INTERVAL 30000   // 30 seconds (legacy)
-#define WIFI_TIMEOUT 20000               // 20 seconds (legacy)
-
-// ============================================================================
-// TIMING CONFIGURATION
+// DEVICE TIMING CONFIGURATION
 // ============================================================================
 
 #define SENSOR_READ_INTERVAL 1000       // 1 second - sensor reading
-#define TELEMETRY_UPLOAD_INTERVAL 30000 // 30 seconds - upload data
-#define CONTROL_FETCH_INTERVAL 300000   // 5 minutes - fetch control data
-#define CONFIG_CHECK_INTERVAL 300000    // 5 minutes - check config update
-#define OTA_CHECK_INTERVAL 300000       // 5 minutes - check firmware update
 #define DISPLAY_UPDATE_INTERVAL 500     // 0.5 seconds - update display
 
 // ============================================================================
@@ -121,23 +93,6 @@
 
 #define BUTTON_DEBOUNCE_MS 50
 #define BUTTON_LONG_PRESS_MS 10000  // 10 seconds for WiFi reset
-
-// ============================================================================
-// SETUP MODE CONFIGURATION
-// ============================================================================
-
-#define SETUP_MODE_TIMEOUT 600000    // 10 minutes
-#define WIFI_SCAN_TIMEOUT 10000      // 10 seconds
-#define WIFI_CONNECT_TIMEOUT 30000   // 30 seconds
-#define WIFI_CONNECT_RETRIES 3
-
-// ============================================================================
-// API RETRY CONFIGURATION
-// ============================================================================
-
-#define API_RETRY_COUNT 3
-#define API_RETRY_DELAY_MS 2000
-#define HTTP_TIMEOUT 10000
 
 // ============================================================================
 // DEFAULT VALUES
@@ -162,26 +117,5 @@
 // When enabled, applies filtering/smoothing to sensor readings
 // Can be toggled via device config from server or app
 #define DEFAULT_SENSOR_FILTER true
-
-// ============================================================================
-// PREFERENCES KEYS (NVS Storage)
-// ============================================================================
-
-#define PREF_NAMESPACE "watertank"
-#define PREF_WIFI_SSID "wifi_ssid"
-#define PREF_WIFI_PASS "wifi_pass"
-#define PREF_WIFI_CONFIGURED "wifi_configured"
-#define PREF_DASHBOARD_USER "dash_user"
-#define PREF_DASHBOARD_PASS "dash_pass"
-#define PREF_DEVICE_TOKEN "device_token"
-#define PREF_HARDWARE_ID "hardware_id"
-#define PREF_AUTO_MODE "auto_mode"
-
-// Sync status keys
-#define PREF_SERVER_SYNC "server_sync"
-#define PREF_CONFIG_SYNC "config_sync"
-#define PREF_SERVER_TIME "server_time"
-#define PREF_MILLIS_SYNC "millis_sync"
-#define PREF_OVERFLOW_CNT "overflow_cnt"
 
 #endif // CONFIG_H
