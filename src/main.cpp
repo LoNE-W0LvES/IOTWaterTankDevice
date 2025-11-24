@@ -51,6 +51,66 @@ unsigned long lastDisplayUpdate = 0;
 // ============================================================================
 
 bool systemInitialized = false;
+bool wifiConnectionHandled = false;  // Track if we've handled initial WiFi connection
+
+// ============================================================================
+// WIFI CONNECTION HANDLER
+// ============================================================================
+
+void handleWiFiConnection() {
+    // Only run once when WiFi first connects
+    if (wifiConnectionHandled || !iotDevice.isWiFiConnected()) {
+        return;
+    }
+
+    wifiConnectionHandled = true;
+    DEBUG_PRINTF("[Setup] WiFi connected! IP: %s\n", iotDevice.getIPAddress().c_str());
+
+    // Update IP address in system config
+    iotDevice.systemConfig.ip_address.value = iotDevice.getIPAddress();
+
+    // Only show STA (client) info if not in AP mode
+    // If in AP+STA mode, keep showing AP info for provisioning
+    if (!iotDevice.getWiFiManager().isAPMode()) {
+        // Pure STA mode - show client network info
+        displayManager.setNetworkInfo(iotDevice.getIPAddress(), iotDevice.getWiFiManager().getSSID());
+    }
+
+    // Start web server (automatically selects CLIENT mode)
+    iotDevice.startWebServer();
+
+    // Authenticate with server using credentials from provisioning
+    String username, password;
+    if (iotDevice.getStorage().loadDashboardCredentials(username, password)) {
+        if (iotDevice.login(username, password)) {
+            DEBUG_PRINTLN("[Setup] Login successful!");
+
+            // Sync time with server
+            iotDevice.syncTimeWithServer();
+
+            // Fetch initial configuration
+            iotDevice.fetchDeviceConfig();
+
+            // Update display with tank settings
+            displayManager.setTankSettings(
+                iotDevice.deviceConfig.tankHeight.value,
+                iotDevice.deviceConfig.tankWidth.value,
+                iotDevice.deviceConfig.tankShape.value,
+                iotDevice.deviceConfig.upperThreshold.value,
+                iotDevice.deviceConfig.lowerThreshold.value
+            );
+
+            systemInitialized = true;
+            displayManager.showMessage("Connected!", "System Ready", 3000);
+        } else {
+            DEBUG_PRINTLN("[Setup] Login failed - device must be registered by admin");
+            displayManager.showMessage("Login Failed", "Contact Admin", 5000);
+        }
+    } else {
+        DEBUG_PRINTLN("[Setup] No dashboard credentials - need provisioning");
+        displayManager.showMessage("No Credentials", "Setup Required", 5000);
+    }
+}
 
 // ============================================================================
 // SETUP
@@ -96,7 +156,7 @@ void setup() {
     // Setup webserver callbacks for custom data serialization
     setupWebServerCallbacks();
 
-    // Try to connect to WiFi
+    // Try to connect to WiFi (non-blocking)
     DEBUG_PRINTLN("[Setup] Connecting to WiFi...");
     if (!iotDevice.connectWiFi()) {
         DEBUG_PRINTLN("[Setup] No saved WiFi - starting AP mode");
@@ -116,66 +176,9 @@ void setup() {
         );
 
         displayManager.showMessage("Setup Mode", "Connect via App");
-    }
-
-    // Wait for WiFi connection
-    unsigned long startTime = millis();
-    while (!iotDevice.isWiFiConnected() && (millis() - startTime < 30000)) {
-        iotDevice.update();
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.println();
-
-    if (iotDevice.isWiFiConnected()) {
-        DEBUG_PRINTF("[Setup] WiFi connected! IP: %s\n", iotDevice.getIPAddress().c_str());
-
-        // Update IP address in system config
-        iotDevice.systemConfig.ip_address.value = iotDevice.getIPAddress();
-
-        // Only show STA (client) info if not in AP mode
-        // If in AP+STA mode, keep showing AP info for provisioning
-        if (!iotDevice.getWiFiManager().isAPMode()) {
-            // Pure STA mode - show client network info
-            displayManager.setNetworkInfo(iotDevice.getIPAddress(), iotDevice.getWiFiManager().getSSID());
-        }
-
-        // Start web server (automatically selects CLIENT mode)
-        iotDevice.startWebServer();
-
-        // Authenticate with server using credentials from provisioning
-        String username, password;
-        if (iotDevice.getStorage().loadDashboardCredentials(username, password)) {
-            if (iotDevice.login(username, password)) {
-                DEBUG_PRINTLN("[Setup] Login successful!");
-
-                // Sync time with server
-                iotDevice.syncTimeWithServer();
-
-                // Fetch initial configuration
-                iotDevice.fetchDeviceConfig();
-
-                // Update display with tank settings
-                displayManager.setTankSettings(
-                    iotDevice.deviceConfig.tankHeight.value,
-                    iotDevice.deviceConfig.tankWidth.value,
-                    iotDevice.deviceConfig.tankShape.value,
-                    iotDevice.deviceConfig.upperThreshold.value,
-                    iotDevice.deviceConfig.lowerThreshold.value
-                );
-
-                systemInitialized = true;
-            } else {
-                DEBUG_PRINTLN("[Setup] Login failed - device must be registered by admin");
-                displayManager.showMessage("Login Failed", "Contact Admin", 5000);
-            }
-        } else {
-            DEBUG_PRINTLN("[Setup] No dashboard credentials - need provisioning");
-            displayManager.showMessage("No Credentials", "Setup Required", 5000);
-        }
     } else {
-        DEBUG_PRINTLN("[Setup] WiFi connection timeout - staying in AP mode");
-        displayManager.showMessage("Setup Mode", "Check App", 5000);
+        DEBUG_PRINTLN("[Setup] WiFi connection initiated (will complete in background)");
+        displayManager.showMessage("Connecting", "Please wait...");
     }
 
     // Set library intervals
@@ -193,6 +196,9 @@ void setup() {
 void loop() {
     // Update IoT device (handles WiFi, sync, config/control fetch, telemetry upload)
     iotDevice.update();
+
+    // Handle WiFi connection (runs once when connected)
+    handleWiFiConnection();
 
     // Read sensors periodically
     if (millis() - lastSensorRead >= SENSOR_READ_INTERVAL) {
