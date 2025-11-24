@@ -20,7 +20,14 @@ IoTStorage::~IoTStorage() {
 
 void IoTStorage::begin() {
     if (!initialized) {
-        preferences.begin(namespaceName.c_str(), false);
+        // Try to open Preferences - this may fail if called during early boot
+        // before nvs_flash_init() has been called
+        if (!preferences.begin(namespaceName.c_str(), false)) {
+            // Failed to initialize - likely called too early (before nvs_flash_init)
+            // This is not an error - begin() will be called again later
+            return;
+        }
+
         initialized = true;
 
         // Load credentials into cache to avoid repeated NVS reads
@@ -44,8 +51,27 @@ void IoTStorage::begin() {
 }
 
 void IoTStorage::clearAll() {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.clear();
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
+
+    // Clear all caches
+    cachedWiFiSSID = "";
+    cachedWiFiPass = "";
+    cachedDashboardUser = "";
+    cachedDashboardPass = "";
+    wifiCredentialsCached = false;
+    dashboardCredentialsCached = false;
 }
 
 // ============================================================================
@@ -53,21 +79,28 @@ void IoTStorage::clearAll() {
 // ============================================================================
 
 void IoTStorage::saveWiFiCredentials(const String& ssid, const String& password) {
-    if (!initialized) begin();
-
     Serial.printf("[Storage] Saving WiFi credentials - SSID: %s\n", ssid.c_str());
 
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
+
+    // Perform writes
     size_t written1 = preferences.putString("wifi_ssid", ssid);
     size_t written2 = preferences.putString("wifi_pass", password);
     size_t written3 = preferences.putBool("wifi_configured", true);
 
-    // Force commit by closing and reopening with delay
-    preferences.end();
-    delay(100);  // Give NVS time to commit to flash
-    preferences.begin(namespaceName.c_str(), false);
-
     Serial.printf("[Storage] NVS write results - SSID: %d bytes, Pass: %d bytes, Configured: %d bytes\n",
                   written1, written2, written3);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 
     // Update cache
     cachedWiFiSSID = ssid;
@@ -108,10 +141,21 @@ bool IoTStorage::loadWiFiCredentials(String& ssid, String& password) {
 }
 
 void IoTStorage::clearWiFiCredentials() {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.remove("wifi_ssid");
     preferences.remove("wifi_pass");
     preferences.putBool("wifi_configured", false);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 
     // Clear cache
     cachedWiFiSSID = "";
@@ -129,20 +173,27 @@ bool IoTStorage::hasWiFiCredentials() {
 // ============================================================================
 
 void IoTStorage::saveDashboardCredentials(const String& username, const String& password) {
-    if (!initialized) begin();
-
     Serial.printf("[Storage] Saving dashboard credentials - User: %s\n", username.c_str());
 
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
+
+    // Perform writes
     size_t written1 = preferences.putString("dash_user", username);
     size_t written2 = preferences.putString("dash_pass", password);
 
-    // Force commit by closing and reopening with delay
-    preferences.end();
-    delay(100);  // Give NVS time to commit to flash
-    preferences.begin(namespaceName.c_str(), false);
-
     Serial.printf("[Storage] NVS write results - User: %d bytes, Pass: %d bytes\n",
                   written1, written2);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 
     // Update cache
     cachedDashboardUser = username;
@@ -187,8 +238,19 @@ bool IoTStorage::loadDashboardCredentials(String& username, String& password) {
 // ============================================================================
 
 void IoTStorage::saveDeviceToken(const String& token) {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.putString("device_token", token);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 }
 
 String IoTStorage::loadDeviceToken() {
@@ -197,8 +259,19 @@ String IoTStorage::loadDeviceToken() {
 }
 
 void IoTStorage::clearDeviceToken() {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.remove("device_token");
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 }
 
 bool IoTStorage::hasDeviceToken() {
@@ -212,8 +285,19 @@ bool IoTStorage::hasDeviceToken() {
 // ============================================================================
 
 void IoTStorage::saveHardwareId(const String& hardwareId) {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.putString("hardware_id", hardwareId);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 }
 
 String IoTStorage::loadHardwareId() {
@@ -227,12 +311,23 @@ String IoTStorage::loadHardwareId() {
 
 void IoTStorage::saveSyncStatus(bool serverSync, bool configSync, uint64_t serverTime,
                                 uint64_t millisAtSync, uint32_t overflowCount) {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.putBool("server_sync", serverSync);
     preferences.putBool("config_sync", configSync);
     preferences.putULong64("server_time", serverTime);
     preferences.putULong64("millis_sync", millisAtSync);
     preferences.putUInt("overflow_cnt", overflowCount);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 }
 
 bool IoTStorage::loadSyncStatus(bool& serverSync, bool& configSync, uint64_t& serverTime,
@@ -251,8 +346,19 @@ bool IoTStorage::loadSyncStatus(bool& serverSync, bool& configSync, uint64_t& se
 // ============================================================================
 
 void IoTStorage::saveString(const String& key, const String& value) {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.putString(key.c_str(), value);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 }
 
 String IoTStorage::loadString(const String& key, const String& defaultValue) {
@@ -261,8 +367,19 @@ String IoTStorage::loadString(const String& key, const String& defaultValue) {
 }
 
 void IoTStorage::saveBool(const String& key, bool value) {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.putBool(key.c_str(), value);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 }
 
 bool IoTStorage::loadBool(const String& key, bool defaultValue) {
@@ -271,8 +388,19 @@ bool IoTStorage::loadBool(const String& key, bool defaultValue) {
 }
 
 void IoTStorage::saveUInt64(const String& key, uint64_t value) {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.putULong64(key.c_str(), value);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 }
 
 uint64_t IoTStorage::loadUInt64(const String& key, uint64_t defaultValue) {
@@ -281,8 +409,19 @@ uint64_t IoTStorage::loadUInt64(const String& key, uint64_t defaultValue) {
 }
 
 void IoTStorage::saveUInt32(const String& key, uint32_t value) {
-    if (!initialized) begin();
+    // Close any existing Preferences connection
+    if (initialized) {
+        preferences.end();
+        initialized = false;
+    }
+
+    // Open namespace for this specific operation
+    preferences.begin(namespaceName.c_str(), false);
     preferences.putUInt(key.c_str(), value);
+
+    // Close immediately to commit to flash
+    preferences.end();
+    initialized = false;
 }
 
 uint32_t IoTStorage::loadUInt32(const String& key, uint32_t defaultValue) {
