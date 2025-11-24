@@ -22,6 +22,22 @@
 #include "IoTWebServer.h"
 
 // ============================================================================
+// HEARTBEAT CONFIGURATION (Can be overridden by user config)
+// ============================================================================
+
+#ifndef HEARTBEAT_CHECK_INTERVAL
+#define HEARTBEAT_CHECK_INTERVAL 30000    // 30 seconds when online
+#endif
+
+#ifndef HEARTBEAT_RETRY_INTERVAL
+#define HEARTBEAT_RETRY_INTERVAL 60000    // 60 seconds when offline
+#endif
+
+#ifndef MAX_HEARTBEAT_FAILURES
+#define MAX_HEARTBEAT_FAILURES 10         // Mark offline after 10 failures
+#endif
+
+// ============================================================================
 // PERMANENT SYSTEM FIELDS (Present in all projects)
 // ============================================================================
 

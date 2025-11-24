@@ -52,10 +52,8 @@
 // How often to check for firmware updates
 #define OTA_CHECK_INTERVAL 300000         // 5 minutes
 
-// Server heartbeat intervals
-#define HEARTBEAT_CHECK_INTERVAL 30000    // 30 seconds when online
-#define HEARTBEAT_RETRY_INTERVAL 60000    // 60 seconds when offline
-#define MAX_HEARTBEAT_FAILURES 10         // Mark offline after 10 failures
+// Note: Heartbeat intervals are now defined in ArduinoIoTDevice.h library header
+// Default values: HEARTBEAT_CHECK_INTERVAL=30000, HEARTBEAT_RETRY_INTERVAL=60000, MAX_HEARTBEAT_FAILURES=10
 
 // ============================================================================
 // API RETRY CONFIGURATION
