@@ -6,7 +6,10 @@
 #include "IoTStorage.h"
 
 IoTStorage::IoTStorage(const String& namespaceName)
-    : namespaceName(namespaceName), initialized(false) {
+    : namespaceName(namespaceName),
+      initialized(false),
+      dashboardCredentialsCached(false),
+      wifiCredentialsCached(false) {
 }
 
 IoTStorage::~IoTStorage() {
@@ -19,6 +22,24 @@ void IoTStorage::begin() {
     if (!initialized) {
         preferences.begin(namespaceName.c_str(), false);
         initialized = true;
+
+        // Load credentials into cache to avoid repeated NVS reads
+        if (preferences.getBool("wifi_configured", false)) {
+            cachedWiFiSSID = preferences.getString("wifi_ssid", "");
+            cachedWiFiPass = preferences.getString("wifi_pass", "");
+            wifiCredentialsCached = true;
+        }
+
+        cachedDashboardUser = preferences.getString("dash_user", "");
+        cachedDashboardPass = preferences.getString("dash_pass", "");
+        dashboardCredentialsCached = (cachedDashboardUser.length() > 0);
+
+        if (dashboardCredentialsCached) {
+            Serial.println("[Storage] Loaded dashboard credentials from NVS");
+        }
+        if (wifiCredentialsCached) {
+            Serial.println("[Storage] Loaded WiFi credentials from NVS");
+        }
     }
 }
 
@@ -36,15 +57,35 @@ void IoTStorage::saveWiFiCredentials(const String& ssid, const String& password)
     preferences.putString("wifi_ssid", ssid);
     preferences.putString("wifi_pass", password);
     preferences.putBool("wifi_configured", true);
+
+    // Update cache
+    cachedWiFiSSID = ssid;
+    cachedWiFiPass = password;
+    wifiCredentialsCached = true;
 }
 
 bool IoTStorage::loadWiFiCredentials(String& ssid, String& password) {
     if (!initialized) begin();
+
+    // Return cached values if available
+    if (wifiCredentialsCached) {
+        ssid = cachedWiFiSSID;
+        password = cachedWiFiPass;
+        return ssid.length() > 0;
+    }
+
+    // Cache miss - load from NVS (shouldn't happen after begin())
     if (!preferences.getBool("wifi_configured", false)) {
         return false;
     }
     ssid = preferences.getString("wifi_ssid", "");
     password = preferences.getString("wifi_pass", "");
+
+    // Update cache
+    cachedWiFiSSID = ssid;
+    cachedWiFiPass = password;
+    wifiCredentialsCached = true;
+
     return ssid.length() > 0;
 }
 
@@ -53,6 +94,11 @@ void IoTStorage::clearWiFiCredentials() {
     preferences.remove("wifi_ssid");
     preferences.remove("wifi_pass");
     preferences.putBool("wifi_configured", false);
+
+    // Clear cache
+    cachedWiFiSSID = "";
+    cachedWiFiPass = "";
+    wifiCredentialsCached = false;
 }
 
 bool IoTStorage::hasWiFiCredentials() {
@@ -68,12 +114,32 @@ void IoTStorage::saveDashboardCredentials(const String& username, const String& 
     if (!initialized) begin();
     preferences.putString("dash_user", username);
     preferences.putString("dash_pass", password);
+
+    // Update cache
+    cachedDashboardUser = username;
+    cachedDashboardPass = password;
+    dashboardCredentialsCached = true;
 }
 
 bool IoTStorage::loadDashboardCredentials(String& username, String& password) {
     if (!initialized) begin();
+
+    // Return cached values if available
+    if (dashboardCredentialsCached) {
+        username = cachedDashboardUser;
+        password = cachedDashboardPass;
+        return username.length() > 0;
+    }
+
+    // Cache miss - load from NVS (shouldn't happen after begin())
     username = preferences.getString("dash_user", "");
     password = preferences.getString("dash_pass", "");
+
+    // Update cache
+    cachedDashboardUser = username;
+    cachedDashboardPass = password;
+    dashboardCredentialsCached = (username.length() > 0);
+
     return username.length() > 0;
 }
 

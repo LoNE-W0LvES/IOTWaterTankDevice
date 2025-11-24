@@ -171,6 +171,15 @@ private:
     Preferences preferences;
     String namespaceName;
     bool initialized;
+
+    // Cached values to avoid repeated NVS reads
+    String cachedDashboardUser;
+    String cachedDashboardPass;
+    bool dashboardCredentialsCached;
+
+    String cachedWiFiSSID;
+    String cachedWiFiPass;
+    bool wifiCredentialsCached;
 };
 
 #endif // IOT_STORAGE_H
