@@ -128,12 +128,29 @@ bool IoTAPIClient::syncTime() {
 bool IoTAPIClient::checkHeartbeat() {
     Serial.println("[API] Checking server heartbeat...");
 
+    // Build heartbeat request body with optional metadata
+    DynamicJsonDocument doc(256);
+    doc["status"] = "online";
+    doc["firmwareVersion"] = firmwareVersion;
+
+    String payload;
+    serializeJson(doc, payload);
+
     String response;
-    int statusCode = httpGET("/api/device/heartbeat", response);
+    int statusCode = httpPOST("/api/device-auth/heartbeat", payload, response);
 
     if (statusCode == 200) {
-        Serial.println("[API] Heartbeat OK - server is online");
-        return true;
+        // Parse response to verify success
+        DynamicJsonDocument responseDoc(256);
+        DeserializationError error = deserializeJson(responseDoc, response);
+
+        if (!error && responseDoc.containsKey("success") && responseDoc["success"].as<bool>()) {
+            Serial.println("[API] Heartbeat OK - server is online");
+            if (responseDoc.containsKey("lastSeen")) {
+                Serial.printf("[API] Last seen: %s\n", responseDoc["lastSeen"].as<const char*>());
+            }
+            return true;
+        }
     }
 
     Serial.printf("[API] Heartbeat failed (HTTP %d)\n", statusCode);
