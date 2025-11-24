@@ -53,18 +53,18 @@ void IoTStorage::clearAll() {
 // ============================================================================
 
 void IoTStorage::saveWiFiCredentials(const String& ssid, const String& password) {
-    Serial.printf("[Storage] Saving WiFi credentials - SSID: %s\n", ssid.c_str());
+    if (!initialized) begin();
 
-    // Close and reopen in write mode for reliable writes
-    if (initialized) {
-        preferences.end();
-    }
-    preferences.begin(namespaceName.c_str(), false);  // false = read-write mode
-    initialized = true;
+    Serial.printf("[Storage] Saving WiFi credentials - SSID: %s\n", ssid.c_str());
 
     size_t written1 = preferences.putString("wifi_ssid", ssid);
     size_t written2 = preferences.putString("wifi_pass", password);
     size_t written3 = preferences.putBool("wifi_configured", true);
+
+    // Force commit by closing and reopening with delay
+    preferences.end();
+    delay(100);  // Give NVS time to commit to flash
+    preferences.begin(namespaceName.c_str(), false);
 
     Serial.printf("[Storage] NVS write results - SSID: %d bytes, Pass: %d bytes, Configured: %d bytes\n",
                   written1, written2, written3);
@@ -129,17 +129,17 @@ bool IoTStorage::hasWiFiCredentials() {
 // ============================================================================
 
 void IoTStorage::saveDashboardCredentials(const String& username, const String& password) {
-    Serial.printf("[Storage] Saving dashboard credentials - User: %s\n", username.c_str());
+    if (!initialized) begin();
 
-    // Close and reopen in write mode for reliable writes
-    if (initialized) {
-        preferences.end();
-    }
-    preferences.begin(namespaceName.c_str(), false);  // false = read-write mode
-    initialized = true;
+    Serial.printf("[Storage] Saving dashboard credentials - User: %s\n", username.c_str());
 
     size_t written1 = preferences.putString("dash_user", username);
     size_t written2 = preferences.putString("dash_pass", password);
+
+    // Force commit by closing and reopening with delay
+    preferences.end();
+    delay(100);  // Give NVS time to commit to flash
+    preferences.begin(namespaceName.c_str(), false);
 
     Serial.printf("[Storage] NVS write results - User: %d bytes, Pass: %d bytes\n",
                   written1, written2);
