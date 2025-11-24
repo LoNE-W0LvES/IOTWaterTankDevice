@@ -54,14 +54,22 @@ void IoTStorage::clearAll() {
 
 void IoTStorage::saveWiFiCredentials(const String& ssid, const String& password) {
     if (!initialized) begin();
-    preferences.putString("wifi_ssid", ssid);
-    preferences.putString("wifi_pass", password);
-    preferences.putBool("wifi_configured", true);
+
+    Serial.printf("[Storage] Saving WiFi credentials - SSID: %s\n", ssid.c_str());
+
+    size_t written1 = preferences.putString("wifi_ssid", ssid);
+    size_t written2 = preferences.putString("wifi_pass", password);
+    size_t written3 = preferences.putBool("wifi_configured", true);
+
+    Serial.printf("[Storage] NVS write results - SSID: %d bytes, Pass: %d bytes, Configured: %d bytes\n",
+                  written1, written2, written3);
 
     // Update cache
     cachedWiFiSSID = ssid;
     cachedWiFiPass = password;
     wifiCredentialsCached = true;
+
+    Serial.println("[Storage] WiFi credentials saved to NVS and cached");
 }
 
 bool IoTStorage::loadWiFiCredentials(String& ssid, String& password) {
@@ -71,15 +79,20 @@ bool IoTStorage::loadWiFiCredentials(String& ssid, String& password) {
     if (wifiCredentialsCached) {
         ssid = cachedWiFiSSID;
         password = cachedWiFiPass;
+        Serial.printf("[Storage] Loading WiFi from cache - SSID: %s\n", ssid.c_str());
         return ssid.length() > 0;
     }
 
     // Cache miss - load from NVS (shouldn't happen after begin())
+    Serial.println("[Storage] Cache miss - loading WiFi from NVS");
     if (!preferences.getBool("wifi_configured", false)) {
+        Serial.println("[Storage] WiFi not configured in NVS");
         return false;
     }
     ssid = preferences.getString("wifi_ssid", "");
     password = preferences.getString("wifi_pass", "");
+
+    Serial.printf("[Storage] Loaded from NVS - SSID: %s\n", ssid.c_str());
 
     // Update cache
     cachedWiFiSSID = ssid;
@@ -112,13 +125,21 @@ bool IoTStorage::hasWiFiCredentials() {
 
 void IoTStorage::saveDashboardCredentials(const String& username, const String& password) {
     if (!initialized) begin();
-    preferences.putString("dash_user", username);
-    preferences.putString("dash_pass", password);
+
+    Serial.printf("[Storage] Saving dashboard credentials - User: %s\n", username.c_str());
+
+    size_t written1 = preferences.putString("dash_user", username);
+    size_t written2 = preferences.putString("dash_pass", password);
+
+    Serial.printf("[Storage] NVS write results - User: %d bytes, Pass: %d bytes\n",
+                  written1, written2);
 
     // Update cache
     cachedDashboardUser = username;
     cachedDashboardPass = password;
     dashboardCredentialsCached = true;
+
+    Serial.println("[Storage] Dashboard credentials saved to NVS and cached");
 }
 
 bool IoTStorage::loadDashboardCredentials(String& username, String& password) {
@@ -128,12 +149,20 @@ bool IoTStorage::loadDashboardCredentials(String& username, String& password) {
     if (dashboardCredentialsCached) {
         username = cachedDashboardUser;
         password = cachedDashboardPass;
+        Serial.printf("[Storage] Loading dashboard from cache - User: %s\n", username.c_str());
         return username.length() > 0;
     }
 
     // Cache miss - load from NVS (shouldn't happen after begin())
+    Serial.println("[Storage] Cache miss - loading dashboard from NVS");
     username = preferences.getString("dash_user", "");
     password = preferences.getString("dash_pass", "");
+
+    if (username.length() > 0) {
+        Serial.printf("[Storage] Loaded from NVS - User: %s\n", username.c_str());
+    } else {
+        Serial.println("[Storage] No dashboard credentials in NVS");
+    }
 
     // Update cache
     cachedDashboardUser = username;
