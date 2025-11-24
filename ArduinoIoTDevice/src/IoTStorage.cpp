@@ -53,9 +53,14 @@ void IoTStorage::clearAll() {
 // ============================================================================
 
 void IoTStorage::saveWiFiCredentials(const String& ssid, const String& password) {
-    if (!initialized) begin();
-
     Serial.printf("[Storage] Saving WiFi credentials - SSID: %s\n", ssid.c_str());
+
+    // Close and reopen in write mode for reliable writes
+    if (initialized) {
+        preferences.end();
+    }
+    preferences.begin(namespaceName.c_str(), false);  // false = read-write mode
+    initialized = true;
 
     size_t written1 = preferences.putString("wifi_ssid", ssid);
     size_t written2 = preferences.putString("wifi_pass", password);
@@ -124,9 +129,14 @@ bool IoTStorage::hasWiFiCredentials() {
 // ============================================================================
 
 void IoTStorage::saveDashboardCredentials(const String& username, const String& password) {
-    if (!initialized) begin();
-
     Serial.printf("[Storage] Saving dashboard credentials - User: %s\n", username.c_str());
+
+    // Close and reopen in write mode for reliable writes
+    if (initialized) {
+        preferences.end();
+    }
+    preferences.begin(namespaceName.c_str(), false);  // false = read-write mode
+    initialized = true;
 
     size_t written1 = preferences.putString("dash_user", username);
     size_t written2 = preferences.putString("dash_pass", password);
