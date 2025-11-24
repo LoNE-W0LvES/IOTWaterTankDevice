@@ -14,6 +14,7 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <time.h>
 #include "IoTField.h"
 #include "IoTStorage.h"
 #include "IoTWiFiManager.h"
@@ -504,7 +505,39 @@ public:
     // ========================================================================
 
     bool syncTimeWithServer() {
-        return apiClient.syncTime();
+        Serial.println("[IoTDevice] Syncing time with NTP...");
+
+        // Configure NTP with multiple servers for redundancy
+        // GMT offset: 0 (we'll use UTC)
+        // Daylight offset: 0
+        configTime(0, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
+
+        // Wait for time to be set (max 10 seconds)
+        int retries = 0;
+        const int maxRetries = 20;  // 20 * 500ms = 10 seconds
+
+        while (retries < maxRetries) {
+            struct tm timeinfo;
+            if (getLocalTime(&timeinfo, 500)) {
+                // Time successfully synchronized
+                time_t now = time(nullptr);
+                uint64_t timestamp = (uint64_t)now * 1000;  // Convert to milliseconds
+
+                syncManager.setServerTime(timestamp);
+
+                char timeStr[64];
+                strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
+                Serial.printf("[IoTDevice] Time synced via NTP: %s (UTC)\n", timeStr);
+                Serial.printf("[IoTDevice] Timestamp: %llu ms\n", timestamp);
+
+                return true;
+            }
+            retries++;
+            delay(500);
+        }
+
+        Serial.println("[IoTDevice] NTP sync failed - timeout");
+        return false;
     }
 
     uint64_t getCurrentTimestamp() {
