@@ -527,13 +527,6 @@ String serializeConfig() {
     forceUpdate["value"] = iotDevice.systemConfig.force_update.value;
     forceUpdate["lastModified"] = iotDevice.systemConfig.force_update.lastModified;
 
-    JsonObject ipAddress = doc.createNestedObject("ip_address");
-    ipAddress["key"] = "ip_address";
-    ipAddress["label"] = "Device Local IP Address";
-    ipAddress["type"] = "string";
-    ipAddress["value"] = iotDevice.systemConfig.ip_address.value;
-    ipAddress["lastModified"] = iotDevice.systemConfig.ip_address.lastModified;
-
     JsonObject autoUpdate = doc.createNestedObject("auto_update");
     autoUpdate["key"] = "auto_update";
     autoUpdate["label"] = "Auto Update Configuration";
@@ -617,13 +610,6 @@ bool deserializeConfig(const String& body) {
         iotDevice.systemConfig.force_update.value = doc["force_update"]["value"].as<bool>();
         if (doc["force_update"].containsKey("lastModified")) {
             iotDevice.systemConfig.force_update.lastModified = doc["force_update"]["lastModified"].as<uint64_t>();
-        }
-    }
-
-    if (doc.containsKey("ip_address") && doc["ip_address"].containsKey("value")) {
-        iotDevice.systemConfig.ip_address.value = doc["ip_address"]["value"].as<String>();
-        if (doc["ip_address"].containsKey("lastModified")) {
-            iotDevice.systemConfig.ip_address.lastModified = doc["ip_address"]["lastModified"].as<uint64_t>();
         }
     }
 
