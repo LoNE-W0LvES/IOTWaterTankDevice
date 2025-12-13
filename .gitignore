@@ -28,3 +28,4 @@ secrets.h
 
 # Logs
 *.log
+.claude/
