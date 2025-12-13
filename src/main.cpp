@@ -152,6 +152,7 @@ void setup() {
                              MONGODB_DEVICE_ID, FIRMWARE_VERSION);
     iotDevice.setDeviceId(DEVICE_ID);
     iotDevice.setAPPassword(AP_PASSWORD);
+    iotDevice.setMDNSHostname(MDNS_HOSTNAME);
 
     // Setup webserver callbacks for custom data serialization
     setupWebServerCallbacks();

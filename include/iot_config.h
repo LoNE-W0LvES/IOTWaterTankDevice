@@ -31,6 +31,7 @@
 
 #define AP_SSID "AquaFlow-Setup"
 #define AP_PASSWORD "PassAquaWT001"
+#define MDNS_HOSTNAME "watertank"       // mDNS hostname (device accessible at watertank.local)
 #define WIFI_TIMEOUT_MS 20000           // 20 seconds
 #define WIFI_RETRY_INTERVAL_MS 30000    // 30 seconds between reconnection attempts
 #define WIFI_RECONNECT_INTERVAL 30000   // 30 seconds (legacy)
