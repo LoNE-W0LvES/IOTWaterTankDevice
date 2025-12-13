@@ -66,6 +66,9 @@ void handleWiFiConnection() {
     wifiConnectionHandled = true;
     DEBUG_PRINTF("[Setup] WiFi connected! IP: %s\n", iotDevice.getIPAddress().c_str());
 
+    // Update IP address in system config (commented out - can be enabled if needed)
+    // iotDevice.systemConfig.ip_address.value = iotDevice.getIPAddress();
+
     // Only show STA (client) info if not in AP mode
     // If in AP+STA mode, keep showing AP info for provisioning
     if (!iotDevice.getWiFiManager().isAPMode()) {
